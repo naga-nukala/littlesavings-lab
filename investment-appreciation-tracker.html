@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Appreciation Tracker</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:600px;margin:0 auto;}
+  h1{font-size:20px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;}
+  label{display:block;font-size:11px;color:var(--sub);margin-bottom:4px;}
+  input, select{width:100%;padding:9px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:14px;}
+  input[type=date]{color-scheme:dark;}
+  input:focus, select:focus{outline:2px solid var(--acc);}
+  .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .field{flex:1;min-width:100px;}
+  button.add{width:100%;padding:12px;border:none;border-radius:10px;background:var(--acc);color:#052e16;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px;}
+
+  .summary-box{text-align:center;padding:20px 16px;}
+  .summary-num{font-size:32px;font-weight:800;}
+  .summary-label{color:var(--sub);font-size:12px;}
+  .stat-row{display:flex;gap:10px;margin-top:14px;}
+  .stat{flex:1;text-align:center;background:#0f172a;border-radius:10px;padding:12px;}
+  .stat .n{font-size:16px;font-weight:700;}
+  .stat .l{font-size:10px;color:var(--sub);margin-top:2px;}
+
+  .inv-item{border-bottom:1px solid #334155;padding:12px 0;}
+  .inv-item:last-child{border-bottom:none;}
+  .inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .inv-name{font-weight:700;font-size:14px;}
+  .type-tag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.15);color:#60a5fa;font-weight:700;margin-left:6px;}
+  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;}
+  .inv-meta{font-size:12px;color:var(--sub);margin-bottom:4px;}
+  .gain-pos{color:var(--acc);font-weight:700;}
+  .gain-neg{color:var(--bad);font-weight:700;}
+  .empty{text-align:center;color:var(--sub);font-size:13px;padding:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📈 Investment Appreciation Tracker</h1>
+  <p class="sub">Track invested amount vs current value for each investment — see real gains, not just balances.</p>
+
+  <div class="card summary-box">
+    <div class="summary-num" id="totalGainPct">0%</div>
+    <div class="summary-label">Overall Portfolio Gain</div>
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="totalInvested">₹0</div><div class="l">Total Invested</div></div>
+      <div class="stat"><div class="n" id="totalCurrent">₹0</div><div class="l">Current Value</div></div>
+      <div class="stat"><div class="n" id="totalGainAmt">₹0</div><div class="l">Absolute Gain</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="field"><label>Investment Name</label><input type="text" id="invName" placeholder="e.g. Axis Bluechip SIP"></div>
+      <div class="field"><label>Type</label>
+        <select id="invType">
+          <option value="SIP/Mutual Fund">SIP/Mutual Fund</option>
+          <option value="Stocks">Stocks</option>
+          <option value="FD">Fixed Deposit</option>
+          <option value="RD">Recurring Deposit</option>
+          <option value="PPF/EPF">PPF/EPF</option>
+          <option value="Gold">Gold</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Invested Amount (₹)</label><input type="number" id="investedAmt" placeholder="e.g. 50000"></div>
+      <div class="field"><label>Investment Date</label><input type="date" id="investedDate"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Current Value (₹)</label><input type="number" id="currentVal" placeholder="e.g. 58000"></div>
+    </div>
+    <button class="add" id="addBtn" onclick="addInvestment()">+ Add Investment</button>
+  </div>
+
+  <div class="card">
+    <label style="font-size:14px;color:var(--txt);font-weight:700;">Your Investments</label>
+    <div id="invList"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'investment_appreciation_entries';
+let investments = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let editingId = null;
+
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(investments)); }
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+document.getElementById('investedDate').max = todayStr();
+
+function yearsHeld(dateStr){
+  const then = new Date(dateStr);
+  const now = new Date();
+  return Math.max((now - then) / (1000*60*60*24*365.25), 1/365);
+}
+
+function cagr(invested, current, years){
+  if(invested<=0 || years<=0) return 0;
+  return (Math.pow(current/invested, 1/years) - 1) * 100;
+}
+
+function addInvestment(){
+  const name = document.getElementById('invName').value.trim();
+  const type = document.getElementById('invType').value;
+  const invested = parseFloat(document.getElementById('investedAmt').value) || 0;
+  const date = document.getElementById('investedDate').value || todayStr();
+  const current = parseFloat(document.getElementById('currentVal').value) || 0;
+
+  if(!name || invested<=0 || current<=0) return;
+  if(date > todayStr()){ alert('Investment date cannot be in the future.'); return; }
+
+  if(editingId !== null){
+    const idx = investments.findIndex(i=>i.id===editingId);
+    if(idx > -1) investments[idx] = { ...investments[idx], name, type, invested, date, current };
+    editingId = null;
+    document.getElementById('addBtn').textContent = '+ Add Investment';
+  } else {
+    investments.push({ id: Date.now(), name, type, invested, date, current });
+  }
+  save();
+
+  document.getElementById('invName').value='';
+  document.getElementById('investedAmt').value='';
+  document.getElementById('investedDate').value='';
+  document.getElementById('currentVal').value='';
+
+  render();
+}
+
+function editInvestment(id){
+  const i = investments.find(i=>i.id===id);
+  if(!i) return;
+  document.getElementById('invName').value = i.name;
+  document.getElementById('invType').value = i.type;
+  document.getElementById('investedAmt').value = i.invested;
+  document.getElementById('investedDate').value = i.date;
+  document.getElementById('currentVal').value = i.current;
+  editingId = id;
+  document.getElementById('addBtn').textContent = '✓ Update Investment';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function removeInvestment(id){
+  investments = investments.filter(i=>i.id!==id);
+  save();
+  render();
+}
+
+function render(){
+  const container = document.getElementById('invList');
+
+  if(investments.length===0){
+    container.innerHTML = '<div class="empty">No investments tracked yet.</div>';
+    document.getElementById('totalInvested').textContent = '₹0';
+    document.getElementById('totalCurrent').textContent = '₹0';
+    document.getElementById('totalGainAmt').textContent = '₹0';
+    document.getElementById('totalGainPct').textContent = '0%';
+    return;
+  }
+
+  let totalInvested = 0, totalCurrent = 0;
+
+  container.innerHTML = investments.map(i=>{
+    totalInvested += i.invested;
+    totalCurrent += i.current;
+    const gainAmt = i.current - i.invested;
+    const gainPct = i.invested>0 ? (gainAmt/i.invested)*100 : 0;
+    const years = yearsHeld(i.date);
+    const annualized = cagr(i.invested, i.current, years);
+    const gainClass = gainAmt >= 0 ? 'gain-pos' : 'gain-neg';
+
+    return `
+      <div class="inv-item">
+        <div class="inv-head">
+          <span class="inv-name">${i.name}<span class="type-tag">${i.type}</span></span>
+          <span>
+            <button class="del" style="color:var(--acc);" onclick="editInvestment(${i.id})">Edit</button>
+            <button class="del" onclick="removeInvestment(${i.id})">✕</button>
+          </span>
+        </div>
+        <div class="inv-meta">Invested ₹${i.invested.toFixed(0)} on ${i.date} • ${years.toFixed(1)}y held • Now ₹${i.current.toFixed(0)}</div>
+        <div class="${gainClass}">${gainAmt>=0?'+':''}₹${gainAmt.toFixed(0)} (${gainPct>=0?'+':''}${gainPct.toFixed(1)}%) • ~${annualized.toFixed(1)}% annualized</div>
+      </div>
+    `;
+  }).join('');
+
+  const totalGain = totalCurrent - totalInvested;
+  const totalGainPct = totalInvested>0 ? (totalGain/totalInvested)*100 : 0;
+
+  document.getElementById('totalInvested').textContent = '₹' + totalInvested.toFixed(0);
+  document.getElementById('totalCurrent').textContent = '₹' + totalCurrent.toFixed(0);
+  document.getElementById('totalGainAmt').textContent = (totalGain>=0?'+':'') + '₹' + totalGain.toFixed(0);
+
+  const pctEl = document.getElementById('totalGainPct');
+  pctEl.textContent = (totalGainPct>=0?'+':'') + totalGainPct.toFixed(1) + '%';
+  pctEl.style.color = totalGainPct >= 0 ? 'var(--acc)' : 'var(--bad)';
+}
+
+render();
+</script>
+</body>
+</html>

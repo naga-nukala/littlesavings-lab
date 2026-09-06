@@ -116,7 +116,7 @@ h1 em { color: var(--coral); font-style: normal; }
     </div>
   </section>
   <section aria-labelledby="tools-title">
-    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">19 tools / tap a card to flip it</p></div>
+    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">21 tools / tap a card to flip it</p></div>
     <div class="filters" id="filters" role="toolbar" aria-label="Filter tools"></div>
     <div class="card-grid" id="card-grid"></div>
   </section>
@@ -132,6 +132,7 @@ const tools = [
   { name: "Multi-SIM Tracker", file: "sim-tracker.html", icon: "📶", category: "Monthly bills", description: "Track, renew, and flag idle SIMs." },
   { name: "Internet Cost Comparator", file: "internet-cost-comparator.html", icon: "📡", category: "Monthly bills", description: "Compare the effective monthly cost of plans." },
   { name: "OTT Rotation Tracker", file: "ott-rotation-tracker.html", icon: "📺", category: "Monthly bills", description: "Only pay for what you are watching." },
+  { name: "Auto-Debit Tracker", file: "autodebit-tracker.html", icon: "🔁", category: "Monthly bills", description: "Track recurring payments and due dates." },
   { name: "Bank Fees & Card Tracker", file: "bank-fees-tracker.html", icon: "🏦", category: "Banking & cards", description: "Decide which cards to keep or close." },
   { name: "Credit Card Cashback Calculator", file: "cc-cashback-calculator.html", icon: "💸", category: "Banking & cards", description: "Compare online, offline, and utility cashback." },
   { name: "CASA vs Rupay CC Savings", file: "casa-rupay-calculator.html", icon: "💳", category: "Banking & cards", description: "Work out float interest and rewards." },
@@ -141,7 +142,9 @@ const tools = [
   { name: "Medicine & Lab Test Comparator", file: "medicine-lab-comparator.html", icon: "💊", category: "Shopping & health", description: "Compare MRP with platform prices." },
   { name: "Money Framework Dashboard", file: "money-framework-dashboard.html", icon: "📊", category: "Planning", description: "See inflow, outflow, debts, and savings." },
   { name: "Travel Mode Comparator", file: "travel-mode-comparator.html", icon: "🚆", category: "Planning", description: "Compare train, bus, and car by group size." },
-  { name: "Yield Stack", file: "yield-stack.html", icon: "📈", category: "Planning", description: "Stack rates, taxes, and returns." }
+  { name: "Yield Stack", file: "yield-stack.html", icon: "📈", category: "Planning", description: "Stack rates, taxes, and returns." },
+  { name: "Investment Appreciation Tracker", file: "investment-appreciation-tracker.html", icon: "📊", category: "Planning", description: "Track gains across investments." },
+  { name: "Micro-Investment Redirect", file: "micro-investment-tracker.html", icon: "🌱", category: "Planning", description: "Turn small savings into investments." }
 ];
 const featured = [tools[17], tools[15], tools[8], tools[12]];
 let activeCategory = "All tools";

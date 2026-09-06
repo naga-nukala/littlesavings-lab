@@ -77,11 +77,11 @@ h1 span { color:var(--coral); }
     <button class="arrow arrow-left" id="previous" type="button" aria-label="Previous card">←</button>
     <div class="rotator" id="rotator"></div>
     <button class="arrow arrow-right" id="next" type="button" aria-label="Next card">→</button>
-    <div class="progress"><span class="progress-count" id="progress-count">01 / 18</span><div class="dots" id="dots"></div></div>
+    <div class="progress"><span class="progress-count" id="progress-count">01 / 21</span><div class="dots" id="dots"></div></div>
     <p class="hint">Cards rotate automatically · use ← → to browse</p>
   </section>
 </main>
-<footer class="shell footer"><span>Personal finance, made more tangible.</span><strong>18 tools for clearer choices.</strong></footer>
+<footer class="shell footer"><span>Personal finance, made more tangible.</span><strong>21 tools for clearer choices.</strong></footer>
 <script>
 const tools = [
   ["Flat Buying Scorecard", "flat-scorecard.html", "🏠", "Big decisions", "Score a flat before buying."],
@@ -92,6 +92,7 @@ const tools = [
   ["Multi-SIM Tracker", "sim-tracker.html", "📶", "Monthly bills", "Track, renew, and flag idle SIMs."],
   ["Internet Cost Comparator", "internet-cost-comparator.html", "📡", "Monthly bills", "Compare the effective monthly cost of plans."],
   ["OTT Rotation Tracker", "ott-rotation-tracker.html", "📺", "Monthly bills", "Only pay for what you are watching."],
+  ["Auto-Debit Tracker", "autodebit-tracker.html", "🔁", "Monthly bills", "Track recurring payments and due dates."],
   ["Bank Fees & Card Tracker", "bank-fees-tracker.html", "🏦", "Banking & cards", "Decide which cards to keep or close."],
   ["Credit Card Cashback Calculator", "cc-cashback-calculator.html", "💸", "Banking & cards", "Compare online, offline, and utility cashback."],
   ["CASA vs Rupay CC Savings", "casa-rupay-calculator.html", "💳", "Banking & cards", "Work out float interest and rewards."],
@@ -101,7 +102,9 @@ const tools = [
   ["Medicine & Lab Test Comparator", "medicine-lab-comparator.html", "💊", "Shopping & health", "Compare MRP with platform prices."],
   ["Money Framework Dashboard", "money-framework-dashboard.html", "📊", "Planning", "See inflow, outflow, debts, and savings."],
   ["Travel Mode Comparator", "travel-mode-comparator.html", "🚆", "Planning", "Compare train, bus, and car by group size."],
-  ["Yield Stack", "yield-stack.html", "📈", "Planning", "Stack rates, taxes, and returns."]
+  ["Yield Stack", "yield-stack.html", "📈", "Planning", "Stack rates, taxes, and returns."],
+  ["Investment Appreciation Tracker", "investment-appreciation-tracker.html", "📊", "Planning", "Track gains across investments."],
+  ["Micro-Investment Redirect", "micro-investment-tracker.html", "🌱", "Planning", "Turn small savings into investments."]
 ];
 let current = 0;
 let timer;
