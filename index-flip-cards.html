@@ -164,8 +164,8 @@ function renderCards() {
   count.textContent = `${visibleTools.length} ${visibleTools.length === 1 ? "tool" : "tools"} / tap a card to flip it`;
   grid.innerHTML = visibleTools.length ? visibleTools.map((tool, index) => `<article class="card" tabindex="0" aria-label="${tool.name}">
     <div class="card-inner">
-      <div class="card-face card-front"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">${String(index + 1).padStart(2, "0")}</span></div><div><h3>${tool.name}</h3><p class="card-desc">${tool.description}</p></div><span class="card-cta">Flip to open</span></div>
-      <div class="card-face card-back"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">READY</span></div><div><h3>Ready when you are.</h3><p class="card-desc">Open ${tool.name} and turn a question into a number.</p></div><a class="card-cta" href="${tool.file}">Open tool <span aria-hidden="true">↗</span></a></div>
+      <div class="card-face card-front"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">${String(index + 1).padStart(2, "0")}</span></div><div><h3>${tool.name}</h3></div><span class="card-cta">Flip for details</span></div>
+      <div class="card-face card-back"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">ABOUT</span></div><div><h3>${tool.name}</h3><p class="card-desc">${tool.description}</p></div><a class="card-cta" href="${tool.file}">Open tool <span aria-hidden="true">↗</span></a></div>
     </div>
   </article>`).join("") : '<div class="empty">No tools in this category yet.</div>';
   grid.querySelectorAll(".card").forEach(card => {
