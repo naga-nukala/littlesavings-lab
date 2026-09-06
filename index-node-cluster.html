@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Savings Lab | Node Cluster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#0d111b; --panel:#151c2b; --text:#f2f4fb; --muted:#929caf; --line:#344057; --mint:#8de5c4; --blue:#79b7ff; --orange:#ffad7a; --violet:#c2a0ff; }
+* { box-sizing:border-box; }
+body { margin:0; min-width:320px; color:var(--text); font-family:"DM Sans",sans-serif; background:radial-gradient(circle at 50% 22%,#273a4d 0,transparent 34%),linear-gradient(145deg,#0d121c,#0b0f18); }
+.shell { width:min(1200px,calc(100% - 36px)); margin:0 auto; }
+.topbar { display:flex; align-items:center; justify-content:space-between; padding:25px 0; }
+.brand { color:var(--text); text-decoration:none; font:700 15px "Space Grotesk",sans-serif; letter-spacing:-.04em; }
+.brand-mark { display:inline-block; width:9px; height:9px; margin-right:8px; border-radius:50%; background:var(--mint); box-shadow:13px 0 var(--blue),6px 10px var(--orange); }
+.topbar a:last-child { color:var(--muted); text-decoration:none; font-size:12px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+.topbar a:last-child:hover { color:var(--mint); border-color:var(--mint); }
+.intro { padding:48px 0 28px; }
+.eyebrow { color:var(--mint); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+h1 { max-width:700px; margin:14px 0 14px; font:700 clamp(42px,6vw,76px)/.95 "Space Grotesk",sans-serif; letter-spacing:-.08em; }
+h1 span { color:var(--blue); }
+.lede { max-width:510px; color:var(--muted); font-size:14px; line-height:1.65; }
+.cluster-frame { position:relative; height:700px; overflow:hidden; border:1px solid #2a3549; border-radius:24px; background:linear-gradient(145deg,#101725dd,#0b111dd9); box-shadow:0 30px 80px #0008,0 0 0 1px #ffffff06 inset; }
+.cluster-frame::before { content:""; position:absolute; inset:0; opacity:.28; background-image:linear-gradient(#7288a00c 1px,transparent 1px),linear-gradient(90deg,#7288a00c 1px,transparent 1px); background-size:32px 32px; }
+#connections { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.edge { fill:none; stroke:#536983; stroke-width:1.2; stroke-dasharray:3 10; animation:flow 6s linear infinite; opacity:.65; }
+.edge:nth-child(3n) { stroke:var(--mint); opacity:.38; }
+@keyframes flow { to { stroke-dashoffset:-80; } }
+.node { position:absolute; width:176px; min-height:74px; padding:12px 13px; border:1px solid var(--line); border-radius:12px; color:var(--text); text-decoration:none; background:#182235eF; box-shadow:0 12px 25px #0005; transform:translate(-50%,-50%); transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease; will-change:left,top; }
+.node:hover, .node.active { z-index:4; border-color:var(--mint); box-shadow:0 0 0 4px #8de5c41c,0 18px 38px #0009; transform:translate(-50%,-50%) scale(1.07); }
+.node:nth-of-type(3n) { animation-delay:-1.4s; }.node:nth-of-type(4n) { animation-delay:-2.8s; }.node:nth-of-type(5n) { animation-delay:-3.7s; }
+.node-category { margin-bottom:7px; color:var(--blue); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.node:nth-of-type(3n) .node-category { color:var(--orange); }.node:nth-of-type(4n) .node-category { color:var(--violet); }
+.node-name { font:600 13px/1.2 "Space Grotesk",sans-serif; letter-spacing:-.025em; }
+.node-dot { position:absolute; right:-5px; top:50%; width:9px; height:9px; border:2px solid var(--bg); border-radius:50%; background:var(--mint); transform:translateY(-50%); }
+.center-node { position:absolute; left:50%; top:50%; z-index:3; width:194px; height:120px; padding:20px; border:1px solid var(--mint); border-radius:18px; background:linear-gradient(145deg,#1d3b3c,#16252e); box-shadow:0 0 0 9px #8de5c40d,0 0 45px #8de5c438; transform:translate(-50%,-50%); text-align:center; }
+.center-node::before { content:""; position:absolute; inset:-15px; border:1px solid #8de5c425; border-radius:23px; animation:orbit 4s linear infinite; }
+@keyframes orbit { to { transform:rotate(360deg); } }
+.center-node .node-category { color:var(--mint); }.center-node strong { display:block; margin-top:8px; font:700 22px "Space Grotesk",sans-serif; letter-spacing:-.06em; }
+.legend { display:flex; flex-wrap:wrap; justify-content:center; gap:18px; padding:22px 0; color:var(--muted); font-size:11px; }
+.legend span::before { content:""; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:var(--mint); }.legend span:nth-child(2)::before { background:var(--blue); }.legend span:nth-child(3)::before { background:var(--orange); }.legend span:nth-child(4)::before { background:var(--violet); }
+.footer { padding:26px 0 35px; border-top:1px solid #ffffff0b; color:var(--muted); font-size:12px; text-align:center; }
+@media (max-width:900px) { .cluster-frame { height:760px; overflow:auto; } .cluster-frame::after { content:"Scroll to explore the cluster"; position:absolute; bottom:15px; left:0; right:0; color:var(--muted); font-size:10px; text-align:center; } #connections { width:100%; min-width:850px; } .node { min-width:150px; } }
+@media (max-width:600px) { .shell { width:calc(100% - 24px); } .topbar { padding:18px 0; } .topbar a:last-child { display:none; } .intro { padding:38px 0 24px; } .cluster-frame { height:650px; min-width:100%; } }
+@media (prefers-reduced-motion:reduce) { .edge,.node,.center-node::before { animation:none; } }
+</style>
+</head>
+<body>
+<header class="shell topbar"><a class="brand" href="index.html"><i class="brand-mark" aria-hidden="true"></i>LITTLE SAVINGS LAB</a><a href="index-airport-board.html">View departure board</a></header>
+<main class="shell">
+  <section class="intro"><div class="eyebrow">Follow the connections</div><h1>Your money has a <span>shape.</span></h1><p class="lede">A living map of the toolkit. Hover a node to bring it forward, then follow the right path for the decision in front of you.</p></section>
+  <section class="cluster-frame" id="cluster" aria-label="Interactive Little Savings Lab node cluster"><svg id="connections" aria-hidden="true"></svg><div class="center-node"><div class="node-category">Central command</div><strong>Little Savings Lab</strong></div></section>
+  <div class="legend"><span>Big decisions</span><span>Monthly bills</span><span>Banking & cards</span><span>Planning</span></div>
+</main>
+<footer class="shell footer">Each node is a doorway to a clearer number.</footer>
+<script>
+const tools = [
+  ["Flat Buying Scorecard","flat-scorecard.html","Big decisions"],["Bike/Car Ownership Cost","vehicle-cost-calculator.html","Big decisions"],["Insurance Coverage Checker","insurance-coverage-checker.html","Big decisions"],["Emergency Fund Calculator","emergency-fund-calculator.html","Big decisions"],["Mobile Cost & RC Calculator","mobile-cost-calculator.html","Monthly bills"],["Multi-SIM Tracker","sim-tracker.html","Monthly bills"],["Internet Cost Comparator","internet-cost-comparator.html","Monthly bills"],["OTT Rotation Tracker","ott-rotation-tracker.html","Monthly bills"],["Bank Fees & Card Tracker","bank-fees-tracker.html","Banking & cards"],["Credit Card Cashback Calculator","cc-cashback-calculator.html","Banking & cards"],["CASA vs Rupay CC Savings","casa-rupay-calculator.html","Banking & cards"],["Gift Card Savings Calculator","gift-card-calculator.html","Banking & cards"],["Price Comparator","price-comparator.html","Shopping & health"],["DMart Shopping Checklist","dmart-checklist.html","Shopping & health"],["Medicine & Lab Test Comparator","medicine-lab-comparator.html","Shopping & health"],["Money Framework Dashboard","money-framework-dashboard.html","Planning"],["Travel Mode Comparator","travel-mode-comparator.html","Planning"],["Yield Stack","yield-stack.html","Planning"]
+];
+const cluster = document.getElementById("cluster");
+const svg = document.getElementById("connections");
+const positions = [[14,16],[36,10],[65,11],[86,19],[11,38],[31,29],[69,29],[91,40],[8,65],[29,52],[72,52],[94,67],[15,88],[39,78],[65,82],[87,91],[28,94],[72,94]];
+const orbitItems = [];
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+function renderCluster() {
+  cluster.querySelectorAll(".node").forEach(node => node.remove());
+  svg.innerHTML = positions.map(pos => `<line class="edge" x1="50%" y1="50%" x2="${pos[0]}%" y2="${pos[1]}%"></line>`).join("");
+  const lines = [...svg.querySelectorAll(".edge")];
+  tools.forEach((tool, index) => {
+    const [name, file, category] = tool;
+    const node = document.createElement("a");
+    node.className = "node";
+    node.href = file;
+    node.innerHTML = `<div class="node-category">${category}</div><div class="node-name">${name}</div><i class="node-dot" aria-hidden="true"></i>`;
+    node.addEventListener("mouseenter", () => node.classList.add("active"));
+    node.addEventListener("mouseleave", () => node.classList.remove("active"));
+    cluster.appendChild(node);
+    const [x, y] = positions[index];
+    orbitItems.push({ node, line: lines[index], angle: Math.atan2(y - 50, x - 50), radiusX: Math.max(18, Math.abs(x - 50) * 1.08), radiusY: Math.max(18, Math.abs(y - 50) * 1.08), direction: index % 5 === 0 ? -1 : 1 });
+  });
+}
+renderCluster();
+function animateCluster(timestamp) {
+  const rotation = reducedMotion.matches ? 0 : timestamp * 0.000045;
+  orbitItems.forEach(item => {
+    const angle = item.angle + rotation * item.direction;
+    const x = 50 + Math.cos(angle) * item.radiusX;
+    const y = 50 + Math.sin(angle) * item.radiusY;
+    item.node.style.left = `${x}%`;
+    item.node.style.top = `${y}%`;
+    item.line.setAttribute("x2", `${x}%`);
+    item.line.setAttribute("y2", `${y}%`);
+  });
+  if (!reducedMotion.matches) requestAnimationFrame(animateCluster);
+}
+requestAnimationFrame(animateCluster);
+</script>
+</body>
+</html>

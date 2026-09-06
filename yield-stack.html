@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yield Stack</title>
+<style>
+:root { color-scheme: dark; --bg:#0f0f14; --panel:#171820; --panel-2:#1d1f29; --text:#eef0f6; --muted:#8d92a3; --line:#313544; --green:#46c98b; --blue:#5b9cf6; --purple:#aa79ed; --red:#ff647c; }
+* { box-sizing:border-box; }
+html, body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+body { user-select:none; }
+button, input, select { font:inherit; }
+button { border:1px solid #353948; color:var(--text); background:#222530; border-radius:6px; padding:8px 11px; cursor:pointer; transition:150ms ease; }
+button:hover { background:#2b2f3b; border-color:#555c70; }
+button:active { transform:translateY(1px); }
+#toolbar { height:58px; display:flex; align-items:center; gap:9px; padding:0 15px; background:#15161d; border-bottom:1px solid #282b36; position:relative; z-index:10; box-shadow:0 3px 18px #0006; }
+.brand { display:flex; align-items:center; gap:9px; min-width:155px; margin-right:5px; font-weight:700; letter-spacing:.02em; }
+.brand-mark { width:22px; height:22px; border:2px solid var(--green); border-radius:6px; position:relative; }
+.brand-mark:after { content:""; width:7px; height:7px; background:var(--green); border-radius:50%; position:absolute; right:-5px; top:6px; box-shadow:-10px 6px 0 #5b9cf6; }
+.toolbar-label { color:var(--muted); font-size:12px; margin-left:auto; }
+#preset { background:#1d2029; border-color:#3b4050; padding:8px 30px 8px 10px; }
+#reset { color:#ff9aa9; background:transparent; border-color:#50303a; font-size:12px; }
+#viewport { position:relative; height:calc(100vh - 58px); min-height:360px; overflow:auto; background:#0b0c10; }
+#canvas { position:relative; width:3000px; height:3000px; overflow:hidden; background-color:var(--bg); background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px); background-size:28px 28px; transform-origin:top left; }
+#edges { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:auto; }
+#nodes { position:absolute; inset:0; pointer-events:none; }
+.edge { fill:none; stroke:#687187; stroke-width:2.2; stroke-dasharray:7 8; animation:flow 1.2s linear infinite; pointer-events:none; transition:150ms ease; }
+.edge.hovered, .edge.selected { stroke:var(--red); stroke-width:3.5; filter:drop-shadow(0 0 4px #ff647c99); }
+.edge-hit { fill:none; stroke:#ffffff; stroke-opacity:0.01; stroke-width:12; pointer-events:all; cursor:pointer; }
+@keyframes flow { to { stroke-dashoffset:-30; } }
+#draft-edge { fill:none; stroke:#8c96ad; stroke-width:2; stroke-dasharray:5 7; pointer-events:none; opacity:.8; }
+.node { position:absolute; width:224px; min-height:108px; border:1px solid; border-radius:8px; background:var(--panel); box-shadow:0 12px 25px #0005, 0 0 0 1px #ffffff05 inset; transition:box-shadow 150ms ease, border-color 150ms ease; z-index:2; pointer-events:auto; }
+.node.selected { border-color:#f3f5ff; box-shadow:0 0 0 2px #ffffff33, 0 14px 30px #0008; }
+.node:hover { box-shadow:0 14px 30px #0008, 0 0 0 1px #ffffff0c inset; }
+.node.dragging { box-shadow:0 20px 35px #0009; z-index:5; }
+.node.source { border-color:#277952; background:linear-gradient(145deg,#15231f,#171b20 70%); }
+.node.rate { border-color:#3267a8; background:linear-gradient(145deg,#151d2c,#181a22 70%); }
+.node.result { border-color:#7046a8; background:linear-gradient(145deg,#20192d,#191820 70%); }
+.node-header { height:33px; display:flex; align-items:center; gap:7px; padding:0 10px; border-bottom:1px solid #ffffff12; cursor:grab; }
+.node-header:active { cursor:grabbing; }
+.node-type { font-size:10px; font-weight:800; letter-spacing:.12em; }
+.source .node-type { color:var(--green); }.rate .node-type { color:var(--blue); }.result .node-type { color:var(--purple); }
+.node-id { color:#707687; font-size:10px; margin-left:auto; }
+.delete-node, .duplicate-node { display:block; border:0; background:transparent; color:#8990a1; padding:0; width:22px; height:22px; font-size:18px; line-height:18px; opacity:.4; }
+.duplicate-node { display:none; font-size:15px; }
+.node:hover .duplicate-node { display:block; }.delete-node:hover, .duplicate-node:hover { opacity:1; color:var(--red); background:#ff647c14; }
+.node-body { padding:10px; position:relative; }
+.field-label { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.08em; display:block; margin-bottom:4px; }
+input, select { color:var(--text); background:#101218; border:1px solid #343946; border-radius:5px; outline:none; padding:6px 7px; user-select:text; transition:150ms ease; }
+input:focus, select:focus { border-color:#7c88a3; box-shadow:0 0 0 2px #ffffff0d; }
+input[type=number] { width:82px; } input[type=text] { width:100%; }
+.source-input { width:100% !important; font-size:16px; font-weight:650; }
+.rate-row { display:grid; grid-template-columns:1fr 86px; gap:8px; align-items:end; }
+.op-row { display:flex; gap:8px; margin-top:8px; align-items:end; }.op-row select { flex:1; }
+.tax-node .node-body { padding-top:8px; }.tax-row { display:flex; align-items:end; gap:6px; }.tax-row select { flex:1; }.tax-info { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; color:#9abcf5; font-size:14px; cursor:help; }.tax-calculation { color:#9abcf5; font-size:11px; line-height:1.35; margin-top:9px; min-height:29px; }
+.result-summary { display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }.result-total { font-size:22px; font-weight:750; letter-spacing:-.02em; }.result-yield { color:#c39df4; font-size:12px; }.result-total.negative, .result-yield.negative { color:var(--red); }.result-baseline { color:var(--muted); font-size:11px; margin-top:6px; }
+.connector { position:absolute; width:13px; height:13px; border:2px solid #0f0f14; border-radius:50%; z-index:4; cursor:crosshair; transition:150ms ease; }
+.connector:hover { transform:scale(1.35); box-shadow:0 0 0 4px #ffffff12; }
+.connector.output { right:-8px; top:50%; transform:translateY(-50%); }.connector.input { left:-8px; top:50%; transform:translateY(-50%); }
+.connector.output:hover { transform:translateY(-50%) scale(1.35); }.connector.input:hover { transform:translateY(-50%) scale(1.35); }
+.source .connector { background:var(--green); }.rate .connector { background:var(--blue); }.result .connector { background:var(--purple); }
+.tax-node .connector { background:#f2c94c; border-color:#f2c94c; }
+.branch-label { position:absolute; color:#858b9b; font-size:11px; letter-spacing:.05em; pointer-events:none; white-space:nowrap; z-index:1; }
+.empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#5f6574; pointer-events:none; text-align:center; }.empty div { max-width:360px; line-height:1.6; }.empty strong { color:#8991a5; display:block; font-size:15px; margin-bottom:4px; }
+.hint { position:absolute; right:17px; bottom:13px; color:#666c7c; font-size:11px; pointer-events:none; }
+.tip { position:fixed; left:18px; bottom:18px; z-index:20; max-width:430px; padding:10px 34px 10px 12px; border:1px solid #3c4354; border-radius:7px; background:#20232d; color:#cdd2df; font-size:12px; box-shadow:0 8px 25px #0007; }
+.tip button { position:absolute; right:5px; top:4px; padding:2px 6px; border:0; background:transparent; color:#9ba2b4; }
+@media (max-width:720px) { #toolbar { gap:5px; padding:0 8px; overflow:auto; } .brand { min-width:115px; font-size:13px; }.toolbar-label { display:none; } #preset { max-width:135px; } button { padding:7px 8px; font-size:12px; } }
+</style>
+</head>
+<body>
+<header id="toolbar">
+  <div class="brand"><span class="brand-mark"></span><span>Yield Stack</span></div>
+  <button id="add-rate">+ Add Rate Node</button>
+  <button id="add-tax">+ Add Tax Node</button>
+  <button id="add-result">+ Add Result Node</button>
+  <span class="toolbar-label">Preset</span>
+  <select id="preset" aria-label="Add preset branch">
+    <option value="">Add preset...</option>
+    <option value="fd">FD + Tax + UPI</option>
+    <option value="card">Credit Card Float</option>
+    <option value="loan">Loan Arbitrage</option>
+  </select>
+  <span class="toolbar-label">Zoom</span>
+  <button id="zoom-out" title="Zoom out">−</button>
+  <button id="zoom-in" title="Zoom in">+</button>
+  <button id="zoom-fit">Fit to screen</button>
+  <button id="reset">Reset Canvas</button>
+</header>
+<main id="viewport">
+<div id="canvas">
+  <svg id="edges" aria-hidden="true"><path id="draft-edge"></path></svg>
+  <div id="nodes"></div>
+  <div id="empty" class="empty"><div><strong>Build a money stack</strong>Connect the green source into rate nodes, then finish a chain with a purple result.</div></div>
+  <div class="hint">Drag from an output dot to an input dot · Delete selected links</div>
+</div>
+</main>
+<div id="tip" class="tip" hidden>Tip: Select line and press backspace or delete to remove connectors<button id="dismiss-tip" aria-label="Dismiss tip">×</button></div>
+<script>
+(() => {
+  const STORAGE_KEY = 'yield-stack-state-v1';
+  const canvas = document.getElementById('canvas');
+  const viewport = document.getElementById('viewport');
+  const nodesEl = document.getElementById('nodes');
+  const edgesEl = document.getElementById('edges');
+  const draftEl = document.getElementById('draft-edge');
+  const emptyEl = document.getElementById('empty');
+  const NODE_W = 224;
+  const state = { nodes: [], edges: [], nextId: 1, selectedEdge: null, selectedNode: null };
+  let dragNode = null;
+  let connectionDrag = null;
+  let saveTimer;
+  let zoom = 1;
+  let copiedNode = null;
+
+  function makeNode(type, x, y, data = {}) {
+    const node = { id: 'n' + state.nextId++, type, x, y, label: data.label || (type === 'rate' ? 'New rate' : ''), value: data.value ?? (type === 'rate' ? 1 : type === 'source' ? 100000 : 0), op: data.op || 'add', slab: data.slab ?? 30 };
+    state.nodes.push(node); return node;
+  }
+  function source() { return state.nodes.find(n => n.type === 'source'); }
+  function nodeById(id) { return state.nodes.find(n => n.id === id); }
+  function edgeFrom(id) { return state.edges.find(e => e.from === id); }
+  function edgesFrom(id) { return state.edges.filter(e => e.from === id); }
+  function edgeTo(id) { return state.edges.find(e => e.to === id); }
+  function nodeCenter(node) { return { x: node.x + (node.type === 'source' || node.type === 'rate' ? NODE_W : NODE_W), y: node.y + 68 }; }
+  function connectorPoint(node, side) { return { x: node.x + (side === 'out' ? NODE_W : 0), y: node.y + 68 }; }
+  function posFromPointer(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom }; }
+  function clampNode(node) { node.x = Math.max(16, Math.min(canvas.clientWidth - NODE_W - 16, node.x)); node.y = Math.max(16, Math.min(canvas.clientHeight - 118, node.y)); }
+  function viewportSpawn() {
+    const startX=viewport.scrollLeft / zoom + 40, startY=viewport.scrollTop / zoom + 70;
+    const maxVisibleX=Math.max(startX, viewport.scrollLeft / zoom + viewport.clientWidth / zoom - NODE_W - 16);
+    const maxVisibleY=Math.max(startY, viewport.scrollTop / zoom + viewport.clientHeight / zoom - 118);
+    for (let row=0; row<12; row++) for (let column=0; column<8; column++) {
+      const x=Math.min(startX + column * 260, maxVisibleX), y=Math.min(startY + row * 150, maxVisibleY);
+      const occupied=state.nodes.some(node => x < node.x + NODE_W && x + NODE_W > node.x && y < node.y + 118 && y + 118 > node.y);
+      if (!occupied) return {x,y};
+    }
+    return {x:startX,y:startY};
+  }
+  function showCreationTip() { if (!localStorage.getItem('yield-stack-tip-dismissed')) document.getElementById('tip').hidden = false; }
+  function selectNode(id) { state.selectedNode = id; nodesEl.querySelectorAll('.node').forEach(el => el.classList.toggle('selected', el.dataset.nodeId === id)); }
+  function setZoom(next) {
+    const centerX=(viewport.scrollLeft + viewport.clientWidth / 2) / zoom;
+    const centerY=(viewport.scrollTop + viewport.clientHeight / 2) / zoom;
+    zoom=Math.max(.25, Math.min(1.5, next)); canvas.style.zoom=zoom;
+    viewport.scrollLeft=Math.max(0, centerX * zoom - viewport.clientWidth / 2);
+    viewport.scrollTop=Math.max(0, centerY * zoom - viewport.clientHeight / 2);
+  }
+  function fitToScreen() {
+    if (!state.nodes.length) return;
+    const maxX=Math.max(...state.nodes.map(n=>n.x+NODE_W)), maxY=Math.max(...state.nodes.map(n=>n.y+118));
+    setZoom(Math.min(1, viewport.clientWidth / (maxX + 50), viewport.clientHeight / (maxY + 50)));
+    viewport.scrollLeft=0; viewport.scrollTop=0;
+  }
+
+  function seed() {
+    state.nodes.length = 0; state.edges.length = 0; state.nextId = 1; state.selectedEdge = null;
+    const compact = viewport.clientWidth < 980;
+    makeNode('source', 42, 46, { label:'Principal', value:100000 });
+    makeNode('rate', compact ? 280 : 350, compact ? 120 : 70, { label:'FD 7%', value:7, op:'add' });
+    makeNode('result', compact ? 280 : 670, compact ? 265 : 70);
+    connect('n1', 'n2'); connect('n2', 'n3');
+    state.nodes.forEach(clampNode);
+  }
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!saved || !Array.isArray(saved.nodes) || !saved.nodes.some(n => n.type === 'source')) return seed();
+      state.nodes = saved.nodes; state.edges = Array.isArray(saved.edges) ? saved.edges : []; state.nextId = saved.nextId || Math.max(0, ...state.nodes.map(n => parseInt(n.id.slice(1), 10) || 0)) + 1; state.selectedEdge = null;
+      state.nodes.forEach(clampNode);
+    } catch (_) { seed(); }
+  }
+  function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(() => localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes:state.nodes, edges:state.edges, nextId:state.nextId })), 500); }
+
+  function validConnection(fromId, toId) {
+    const from = nodeById(fromId), to = nodeById(toId);
+    if (!from || !to || fromId === toId || to.type === 'source' || from.type === 'result') return false;
+    if (from.type === 'source' && to.type !== 'rate' && to.type !== 'tax') return false;
+    if (from.type !== 'source' && from.type !== 'rate' && from.type !== 'tax') return false;
+    if (to.type !== 'rate' && to.type !== 'tax' && to.type !== 'result') return false;
+    if (edgeTo(toId)) return false;
+    if (to.type === 'rate' && createsCycle(fromId, toId)) return false;
+    return true;
+  }
+  function createsCycle(fromId, toId) {
+    const seen = new Set();
+    function visit(id) { if (id === fromId) return true; if (seen.has(id)) return false; seen.add(id); return edgesFrom(id).some(edge => visit(edge.to)); }
+    return visit(toId);
+  }
+  function connect(fromId, toId) { if (!validConnection(fromId, toId)) return false; state.edges.push({ id:'e' + Date.now() + Math.random().toString(16).slice(2), from:fromId, to:toId }); return true; }
+  function removeEdge(id) { state.edges = state.edges.filter(edge => edge.id !== id); if (state.selectedEdge === id) state.selectedEdge = null; }
+  function removeNode(id) { const node = nodeById(id); if (!node || node.type === 'source') return; state.nodes.splice(state.nodes.indexOf(node), 1); state.edges = state.edges.filter(e => e.from !== id && e.to !== id); if (state.selectedNode === id) state.selectedNode = null; }
+  function duplicateNode(node) { if (!node || node.type === 'source') return null; const copy = makeNode(node.type, node.x + 30, node.y + 30, { label:node.label, value:node.value, op:node.op, slab:node.slab }); clampNode(copy); state.selectedNode = copy.id; render(); persist(); return copy; }
+
+  function pathFor(edge) {
+    const from = nodeById(edge.from), to = nodeById(edge.to); if (!from || !to) return '';
+    const a = connectorPoint(from, 'out'), b = connectorPoint(to, 'in'), bend = Math.max(55, Math.abs(b.x - a.x) * .48);
+    return `M ${a.x} ${a.y} C ${a.x + bend} ${a.y}, ${b.x - bend} ${b.y}, ${b.x} ${b.y}`;
+  }
+  function renderEdges() {
+    edgesEl.querySelectorAll('.edge, .edge-hit').forEach(e => e.remove());
+    state.edges.forEach(edge => {
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.classList.add('edge'); if (edge.id === state.selectedEdge) path.classList.add('selected'); path.dataset.edgeId = edge.id; path.setAttribute('d', pathFor(edge));
+      const hit = document.createElementNS('http://www.w3.org/2000/svg','path');
+      hit.classList.add('edge-hit'); hit.dataset.edgeId = edge.id; hit.setAttribute('d', pathFor(edge));
+      hit.addEventListener('pointerenter', () => path.classList.add('hovered'));
+      hit.addEventListener('pointerleave', () => path.classList.remove('hovered'));
+      const selectEdge = event => { event.stopPropagation(); state.selectedEdge = edge.id; renderEdges(); };
+      hit.addEventListener('pointerdown', selectEdge);
+      hit.addEventListener('click', selectEdge);
+      edgesEl.append(path, hit);
+    });
+  }
+  function field(node, tag, attrs) { const el = document.createElement(tag); Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value)); return el; }
+  function renderNode(node) {
+    const el = field(node, 'section', { class:`node ${node.type === 'tax' ? 'tax-node' : node.type}${state.selectedNode === node.id ? ' selected' : ''}`, 'data-node-id':node.id }); el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
+    const header = field(node, 'div', { class:'node-header', tabindex:'0' }); const type = field(node, 'span', { class:'node-type' }); type.textContent = node.type === 'tax' ? 'TAX AUTO' : node.type.toUpperCase(); header.appendChild(type);
+    const ident = field(node, 'span', { class:'node-id' }); ident.textContent = node.id; header.appendChild(ident);
+    if (node.type !== 'source') {
+      const duplicate = field(node, 'button', { class:'duplicate-node', title:'Duplicate node', 'aria-label':'Duplicate node' }); duplicate.textContent = '⧉'; duplicate.addEventListener('click', event => { event.stopPropagation(); duplicateNode(node); }); header.appendChild(duplicate);
+      const del = field(node, 'button', { class:'delete-node', title:'Delete node', 'aria-label':'Delete node' }); del.textContent = '×'; del.addEventListener('click', event => { event.stopPropagation(); removeNode(node.id); render(); persist(); }); header.appendChild(del);
+    }
+    el.appendChild(header);
+    const body = field(node, 'div', { class:'node-body' });
+    if (node.type === 'source') {
+      const label = field(node, 'label', { class:'field-label' }); label.textContent = 'Principal'; body.appendChild(label); const input = field(node, 'input', { class:'source-input', type:'number', min:'0', step:'100' }); input.value = node.value; input.addEventListener('input', () => { node.value = Number(input.value) || 0; recalculate(); persist(); }); body.appendChild(input);
+    } else if (node.type === 'rate') {
+      const row = field(node, 'div', { class:'rate-row' }); const labelWrap = field(node, 'label', { class:'field-label' }); labelWrap.textContent = 'Label'; const label = field(node, 'input', { type:'text', value:node.label, 'aria-label':'Rate label' }); label.addEventListener('input', () => { node.label = label.value; persist(); }); labelWrap.appendChild(label); row.appendChild(labelWrap); const valueWrap = field(node, 'label', { class:'field-label' }); valueWrap.textContent = '% value'; const value = field(node, 'input', { type:'number', min:'-100', step:'.1', value:node.value, 'aria-label':'Rate percentage' }); value.addEventListener('input', () => { node.value = Number(value.value) || 0; recalculate(); persist(); }); valueWrap.appendChild(value); row.appendChild(valueWrap); body.appendChild(row);
+      const opWrap = field(node, 'label', { class:'field-label op-row' }); opWrap.textContent = 'Operation'; const op = field(node, 'select', { 'aria-label':'Rate operation' }); [['add','Add'],['subtract','Subtract'],['multiply','Multiply']].forEach(([v,t]) => { const option = field(node,'option',{value:v}); option.textContent=t; option.selected = node.op === v; op.appendChild(option); }); op.addEventListener('change', () => { node.op = op.value; recalculate(); persist(); }); opWrap.appendChild(op); body.appendChild(opWrap);
+    } else if (node.type === 'tax') {
+      const row = field(node, 'div', { class:'tax-row' }); const slabWrap = field(node, 'label', { class:'field-label' }); slabWrap.textContent = 'Tax Slab'; const slab = field(node, 'select', { 'aria-label':'Tax slab' }); [0,5,10,15,20,25,30].forEach(value => { const option = field(node, 'option', { value }); option.textContent = value + '%'; option.selected = Number(node.slab) === value; slab.appendChild(option); }); slab.addEventListener('change', () => { node.slab = Number(slab.value); recalculate(); persist(); }); slabWrap.appendChild(slab); row.appendChild(slabWrap); const info = field(node, 'span', { class:'tax-info', title:'Tax is calculated on the interest earned, not on your principal. E.g. 7% FD interest × 30% tax slab = 2.1% effective drag.' }); info.textContent = 'ⓘ'; row.appendChild(info); body.appendChild(row); const calculation = field(node, 'div', { class:'tax-calculation', 'data-tax-calculation':node.id }); calculation.textContent = 'Tax on incoming value'; body.appendChild(calculation);
+    } else {
+      const summary = field(node, 'div', { class:'result-summary' }); const total = field(node, 'div', { class:'result-total', 'data-total':node.id }); total.textContent = '₹0'; summary.appendChild(total); const yieldEl = field(node, 'div', { class:'result-yield', 'data-yield':node.id }); yieldEl.textContent = '(0.0%)'; summary.appendChild(yieldEl); body.appendChild(summary); const baseline = field(node, 'div', { class:'result-baseline', 'data-baseline':node.id }); baseline.textContent = 'vs Principal ₹0'; body.appendChild(baseline);
+    }
+    el.appendChild(body);
+    if (node.type !== 'source') { const input = field(node,'span',{class:'connector input', title:'Input'}); input.dataset.connector='input'; el.appendChild(input); }
+    if (node.type !== 'result') { const output = field(node,'span',{class:'connector output', title:'Output'}); output.dataset.connector='output'; el.appendChild(output); }
+    header.addEventListener('pointerdown', event => { selectNode(node.id); header.focus(); startNodeDrag(event, node, el); });
+    el.addEventListener('pointerdown', event => { if (event.target.closest('input,select,button,.connector')) return; startNodeDrag(event,node,el); });
+    el.addEventListener('click', event => { if (!event.target.closest('input,select,button,.connector')) selectNode(node.id); });
+    el.querySelectorAll('.connector').forEach(connector => connector.addEventListener('pointerdown', event => startConnection(event,node,connector.dataset.connector)));
+    return el;
+  }
+  function render() { nodesEl.innerHTML=''; state.nodes.forEach(node => nodesEl.appendChild(renderNode(node))); emptyEl.style.display = state.nodes.length > 1 ? 'none' : 'flex'; renderEdges(); recalculate(); }
+  function startNodeDrag(event, node, el) { if (node.type === 'source') return; event.preventDefault(); const p = posFromPointer(event); dragNode = { node, el, dx:p.x-node.x, dy:p.y-node.y }; el.classList.add('dragging'); window.addEventListener('pointermove', moveNode); window.addEventListener('pointerup', endNodeDrag, {once:true}); }
+  function moveNode(event) { if (!dragNode) return; const p=posFromPointer(event); dragNode.node.x=p.x-dragNode.dx; dragNode.node.y=p.y-dragNode.dy; clampNode(dragNode.node); dragNode.el.style.left=dragNode.node.x+'px'; dragNode.el.style.top=dragNode.node.y+'px'; renderEdges(); updateBranchLabels(); }
+  function endNodeDrag() { if (!dragNode) return; dragNode.el.classList.remove('dragging'); dragNode=null; persist(); }
+  function startConnection(event, node, side) {
+    event.preventDefault(); event.stopPropagation();
+    let origin = node;
+    if (side === 'input') {
+      const incoming = edgeTo(node.id); if (!incoming) return;
+      origin = nodeById(incoming.from); removeEdge(incoming.id);
+    } else if (side !== 'output') return;
+    const p=connectorPoint(origin,'out'); connectionDrag={ node:origin, p }; draftEl.style.display='block'; window.addEventListener('pointermove', moveConnection); window.addEventListener('pointerup', endConnection, {once:true});
+  }
+  function moveConnection(event) { if (!connectionDrag) return; const b=posFromPointer(event), a=connectionDrag.p, bend=Math.max(55,Math.abs(b.x-a.x)*.48); draftEl.setAttribute('d',`M ${a.x} ${a.y} C ${a.x+bend} ${a.y}, ${b.x-bend} ${b.y}, ${b.x} ${b.y}`); }
+  function endConnection(event) { if (!connectionDrag) return; const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('.connector.input'); if (target) { const targetNode=target.closest('.node'); if (targetNode && connect(connectionDrag.node.id,targetNode.dataset.nodeId)) { render(); persist(); } } connectionDrag=null; draftEl.removeAttribute('d'); draftEl.style.display='none'; window.removeEventListener('pointermove',moveConnection); }
+
+  function calculateResult(result) {
+    const principal=Number(source()?.value)||0; let edge=edgeTo(result.id), current=edge && nodeById(edge.from), chain=[]; while (current && (current.type==='rate' || current.type==='tax') && chain.length < state.nodes.length) { chain.unshift(current); const previous=edgeTo(current.id); current=previous && nodeById(previous.from); }
+    if (!current || current.type !== 'source') return { total:0, yield:0, principal, chain };
+    let total=principal; let simpleRate=null; chain.forEach((rate, index) => {
+      if (rate.type === 'tax') {
+        const slab=(Number(rate.slab)||0)/100;
+        if (simpleRate !== null) { const drag=simpleRate*slab; const taxAmount=principal*drag; total -= taxAmount; rate.calculation=`Tax on ${(simpleRate*100).toFixed(1)}% @ ${rate.slab}% slab = -${(drag*100).toFixed(1)}%`; }
+        else { const taxAmount=total*slab; total -= taxAmount; rate.calculation=`Tax on ₹${Math.round(total+taxAmount).toLocaleString('en-IN')} @ ${rate.slab}% slab = -₹${Math.round(taxAmount).toLocaleString('en-IN')}`; }
+        simpleRate=null;
+        return;
+      }
+      const pct=(Number(rate.value)||0)/100;
+      if(rate.op==='subtract') total *= 1-pct; else if(rate.op==='multiply') total *= pct; else total *= 1+pct;
+      simpleRate = index === 0 && rate.op === 'add' ? pct : null;
+    });
+    const delta=total-principal; const yieldValue=principal ? (delta/principal)*100 : 0; console.assert(principal === 0 || yieldValue === 0 || Math.sign(yieldValue) === Math.sign(delta), 'Yield sign mismatch', { total, principal, yieldValue }); return { total, yield:yieldValue, principal, chain };
+  }
+  function recalculate() { state.nodes.filter(n=>n.type==='result').forEach(result => { const calc=calculateResult(result); const negative=calc.total < calc.principal; const total=nodesEl.querySelector(`[data-total="${result.id}"]`), yieldEl=nodesEl.querySelector(`[data-yield="${result.id}"]`), baseline=nodesEl.querySelector(`[data-baseline="${result.id}"]`); if(total) { total.textContent='₹'+Math.round(calc.total).toLocaleString('en-IN'); total.classList.toggle('negative', negative); } if(yieldEl) { yieldEl.textContent='('+calc.yield.toFixed(1)+'%)'; yieldEl.classList.toggle('negative', negative); } if(baseline) baseline.textContent='vs Principal ₹'+Math.round(calc.principal).toLocaleString('en-IN'); }); state.nodes.filter(n=>n.type==='tax').forEach(tax => { const calculation=nodesEl.querySelector(`[data-tax-calculation="${tax.id}"]`); if(calculation) calculation.textContent=tax.calculation || 'Tax on incoming value'; }); updateBranchLabels(); }
+  function updateBranchLabels() {
+    document.querySelectorAll('.branch-label').forEach(el=>el.remove());
+    const addLabel = (node, text) => { if (!node) return; const label=document.createElement('div'); label.className='branch-label'; label.textContent=text; label.style.left=(node.x+8)+'px'; label.style.top=(node.y-20)+'px'; nodesEl.appendChild(label); };
+    const walk = (node, label) => {
+      const outgoing = edgesFrom(node.id);
+      if (outgoing.length > 1) outgoing.forEach((edge, index) => { const child=nodeById(edge.to); const childLabel=label + String.fromCharCode(97 + index); addLabel(child, childLabel); walk(child, childLabel); });
+      else if (outgoing.length === 1) walk(nodeById(outgoing[0].to), label);
+    };
+    const roots = source() ? edgesFrom(source().id) : [];
+    roots.forEach((edge, index) => { const child=nodeById(edge.to); const label='Branch '+(index+1); addLabel(child, label); walk(child, label); });
+  }
+
+  function addRate() { const point=viewportSpawn(); const node=makeNode('rate', point.x, point.y, {label:'New rate',value:1,op:'add'}); clampNode(node); render(); persist(); showCreationTip(); }
+  function addTax() { const point=viewportSpawn(); const node=makeNode('tax', point.x, point.y, {slab:30}); clampNode(node); render(); persist(); showCreationTip(); }
+  function addResult() { const point=viewportSpawn(); const node=makeNode('result', point.x, point.y); clampNode(node); render(); persist(); showCreationTip(); }
+  function preset(kind) {
+    const definitions={ card:[['Card float 1.5%',1.5,'add'],['Rewards 2%',2,'add']], loan:[['Loan cost',8,'subtract'],['Arbitrage yield',12,'add']] }[kind];
+    const compact = viewport.clientWidth < 980;
+    const baseX=viewport.scrollLeft / zoom + (compact ? 280 : 290);
+    const baseY=viewport.scrollTop / zoom + 90;
+    let previous=source(), last;
+    if (kind === 'fd') {
+      const fd=makeNode('rate',baseX,baseY,{label:'FD 7%',value:7,op:'add'}); clampNode(fd); connect(previous.id,fd.id); previous=fd;
+      const tax=makeNode('tax',baseX,compact ? baseY+145 : baseY+150,{slab:30}); clampNode(tax); connect(previous.id,tax.id); previous=tax;
+      const upi=makeNode('rate',compact ? baseX : baseX+260,compact ? baseY+290 : baseY,{label:'UPI Cashback',value:1,op:'add'}); clampNode(upi); connect(previous.id,upi.id); previous=upi;
+      const result=makeNode('result',compact ? baseX : baseX+520,compact ? baseY+435 : baseY); clampNode(result); connect(previous.id,result.id); render(); persist(); showCreationTip(); return;
+    }
+    if(!definitions)return;
+    definitions.forEach((item,index)=>{
+      const x=compact ? baseX : baseX+index*260;
+      const y=compact ? baseY+index*145 : baseY;
+      last=makeNode('rate',x,y,{label:item[0],value:item[1],op:item[2]});
+      clampNode(last); connect(previous.id,last.id); previous=last;
+    });
+    const result=makeNode('result',compact ? baseX : baseX+definitions.length*260,compact ? baseY+definitions.length*145 : baseY);
+    clampNode(result); connect(last.id,result.id); render(); persist(); showCreationTip(); }
+
+  document.getElementById('add-rate').addEventListener('click',addRate); document.getElementById('add-tax').addEventListener('click',addTax); document.getElementById('add-result').addEventListener('click',addResult); document.getElementById('preset').addEventListener('change',event=>{preset(event.target.value);event.target.value='';}); document.getElementById('zoom-out').addEventListener('click',()=>setZoom(zoom-.1)); document.getElementById('zoom-in').addEventListener('click',()=>setZoom(zoom+.1)); document.getElementById('zoom-fit').addEventListener('click',fitToScreen); document.getElementById('dismiss-tip').addEventListener('click',()=>{localStorage.setItem('yield-stack-tip-dismissed','1');document.getElementById('tip').hidden=true;}); document.getElementById('reset').addEventListener('click',()=>{if(confirm('Reset the canvas and remove all saved stacks?')){localStorage.removeItem(STORAGE_KEY);seed();render();}});
+  document.addEventListener('keydown',event=>{
+    const editing=event.target.closest('input,select,textarea');
+    if ((event.key==='Delete'||event.key==='Backspace')&&state.selectedEdge&&!editing) { removeEdge(state.selectedEdge); render(); persist(); return; }
+    if (!editing && (event.ctrlKey||event.metaKey) && event.key.toLowerCase()==='c') { const node=nodeById(state.selectedNode); if(node && node.type!=='source'){ copiedNode={...node}; event.preventDefault(); } return; }
+    if (!editing && (event.ctrlKey||event.metaKey) && event.key.toLowerCase()==='v' && copiedNode) { duplicateNode(copiedNode); event.preventDefault(); showCreationTip(); }
+  });
+  canvas.addEventListener('pointerdown',event=>{if(event.target===canvas||event.target===edgesEl){state.selectedEdge=null; state.selectedNode=null; renderEdges(); nodesEl.querySelectorAll('.node').forEach(el=>el.classList.remove('selected'));}}); window.addEventListener('resize',()=>{state.nodes.forEach(clampNode);render();});
+  load(); render();
+})();
+</script>
+</body>
+</html>

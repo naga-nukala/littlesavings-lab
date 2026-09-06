@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Cost & RC Calculator</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:640px;margin:0 auto;}
+  h1{font-size:20px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;}
+  .member{border-bottom:1px solid #334155;padding-bottom:14px;margin-bottom:14px;}
+  .member:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .row input, .row select{flex:1;min-width:0;}
+  label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px;}
+  .field{flex:1;}
+  .field-hint{font-size:10px;color:var(--sub);margin-top:3px;}
+  input, select{width:100%;padding:9px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:14px;}
+  input:focus, select:focus{outline:2px solid var(--acc);}
+  .name-input{font-weight:700;font-size:15px;margin-bottom:10px;}
+  .per-day{font-size:13px;color:var(--acc);font-weight:700;margin-top:4px;}
+  .badge-cost{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;white-space:nowrap;}
+  .badge-cost.good{background:rgba(34,197,94,.15);color:var(--acc);}
+  .badge-cost.mid{background:rgba(245,158,11,.15);color:var(--warn);}
+  .badge-cost.bad{background:rgba(239,68,68,.15);color:var(--bad);}
+  .benchmark-note{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.6;}
+  .remove-btn{background:none;border:none;color:var(--bad);font-size:13px;cursor:pointer;padding:4px 8px;}
+  button.add{width:100%;padding:12px;border:1px dashed #475569;border-radius:10px;background:transparent;color:var(--txt);font-size:14px;cursor:pointer;margin-bottom:12px;}
+  .total-card{text-align:center;padding:20px 16px;}
+  .total-num{font-size:36px;font-weight:800;color:var(--acc);}
+  .total-label{color:var(--sub);font-size:13px;margin-top:2px;}
+  .breakdown{font-size:12px;color:var(--sub);margin-top:10px;text-align:left;}
+  .breakdown div{display:flex;justify-content:space-between;padding:3px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📱 Mobile Cost & RC Calculator</h1>
+  <p class="sub">Per-day cost = (Device + Accessories + Wear & Tear) ÷ Lifespan(days) + RC/day, per member.</p>
+
+  <div class="card total-card">
+    <div class="total-num" id="totalPerDay">₹0</div>
+    <div class="total-label">Combined Per-Day Cost (all members)</div>
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+  <div class="card" id="membersContainer"></div>
+  <button class="add" onclick="addMember()">+ Add Family Member</button>
+</div>
+
+<script>
+let members = [
+  {name:'Myself', device:0, accessories:0, years:2, rc:0, type:'smart'},
+  {name:'Spouse', device:0, accessories:0, years:2, rc:0, type:'smart'},
+];
+
+function addMember(){
+  members.push({name:'', device:0, accessories:0, years:2, rc:0, type:'smart'});
+  render();
+}
+function removeMember(i){
+  members.splice(i,1);
+  render();
+}
+function updateField(i, field, val){
+  members[i][field] = (field==='name'||field==='type') ? val : parseFloat(val)||0;
+  updateTotals();
+}
+
+const BENCHMARKS = {
+  smart:   { device: 12, accessories: 1.1, rc: 5 },
+  jio:     { device: 3,  accessories: 1, rc: 2 },
+  feature: { device: 1.5,accessories: 0.5, rc: 1 }
+}; // typical fair per-day cost (₹) by component
+
+function benchmarkFor(m){ return BENCHMARKS[m.type] || BENCHMARKS.smart; }
+
+function costParts(m){
+  const days = (m.years||1)*365;
+  return {
+    device: (m.device||0) / days,
+    accessories: (m.accessories||0) / days,
+    rc: (m.rc||0) / 30
+  };
+}
+
+function perDayCost(m){
+  const days = (m.years||1)*365;
+  const device = (m.device + m.accessories) / days;
+  return device + (m.rc||0)/30;
+}
+
+function render(){
+  const container = document.getElementById('membersContainer');
+  container.innerHTML = '';
+  members.forEach((m,i)=>{
+    const div = document.createElement('div');
+    div.className = 'member';
+    div.dataset.index = i;
+    div.innerHTML = `
+      <div class="row">
+        <input class="name-input" placeholder="Member name" value="${m.name}" oninput="updateField(${i},'name',this.value)">
+        <button class="remove-btn" onclick="removeMember(${i})">✕</button>
+      </div>
+      <div class="row">
+        <div class="field"><label>Device Cost (₹)</label><input type="number" value="${m.device}" oninput="updateField(${i},'device',this.value)"></div>
+        <div class="field"><label>Accessories (₹)</label><input type="number" value="${m.accessories}" oninput="updateField(${i},'accessories',this.value)"><div class="field-hint">Cover, screen guard, charger, earphones</div></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Lifespan (years)</label><input type="number" step="0.5" value="${m.years}" oninput="updateField(${i},'years',this.value)"></div>
+        <div class="field"><label>Monthly RC (₹)</label><input type="number" value="${m.rc}" oninput="updateField(${i},'rc',this.value)"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Phone Type</label>
+          <select onchange="updateField(${i},'type',this.value)">
+            <option value="smart" ${m.type==='smart'?'selected':''}>Smartphone</option>
+            <option value="jio" ${m.type==='jio'?'selected':''}>Jio Phone</option>
+            <option value="feature" ${m.type==='feature'?'selected':''}>Feature Phone</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:baseline;">
+        <div class="per-day" data-role="perday">₹${perDayCost(m).toFixed(2)} / day</div>
+        <div class="badge-cost" data-role="badge"></div>
+      </div>
+      <div class="benchmark-note" data-role="note"></div>
+    `;
+    container.appendChild(div);
+  });
+  updateTotals();
+}
+
+function updateTotals(){
+  // update each member's per-day text in place, no rebuild
+  const container = document.getElementById('membersContainer');
+  members.forEach((m,i)=>{
+    const div = container.querySelector(`[data-index="${i}"]`);
+    if(div){
+      const pd = div.querySelector('[data-role="perday"]');
+      if(pd) pd.textContent = `₹${perDayCost(m).toFixed(2)} / day`;
+
+      const parts = costParts(m);
+      const bench = benchmarkFor(m);
+      const note = div.querySelector('[data-role="note"]');
+      const badge = div.querySelector('[data-role="badge"]');
+      if(note && badge){
+        const rows = [
+          {label:'Device', val:parts.device, bench:bench.device},
+          {label:'Accessories', val:parts.accessories, bench:bench.accessories},
+          {label:'RC', val:parts.rc, bench:bench.rc}
+        ];
+        // overall badge = worst offender
+        let worst = {diffPct:-100};
+        rows.forEach(r=>{
+          const diffPct = r.bench>0 ? ((r.val-r.bench)/r.bench)*100 : 0;
+          r.diffPct = diffPct;
+          if(diffPct > worst.diffPct) worst = r;
+        });
+        badge.classList.remove('good','mid','bad');
+        if(worst.diffPct <= 10){ badge.classList.add('good'); badge.textContent='Fair'; }
+        else if(worst.diffPct <= 50){ badge.classList.add('mid'); badge.textContent='A bit high'; }
+        else { badge.classList.add('bad'); badge.textContent='Overpaying'; }
+
+        note.innerHTML = rows.map(r=>{
+          const tag = r.diffPct<=10 ? '✅' : r.diffPct<=50 ? '⚠️' : '🔴';
+          const cmp = r.diffPct>0 ? `+${r.diffPct.toFixed(0)}% vs ₹${r.bench}/day typical` : `within typical (₹${r.bench}/day)`;
+          return `<div>${tag} ${r.label}: ₹${r.val.toFixed(2)}/day — ${cmp}</div>`;
+        }).join('');
+      }
+    }
+  });
+
+  const total = members.reduce((s,m)=>s+perDayCost(m),0);
+  document.getElementById('totalPerDay').textContent = '₹'+total.toFixed(2);
+
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML = members.map(m=>`<div><span>${m.name||'(unnamed)'}</span><span>₹${perDayCost(m).toFixed(2)}/day</span></div>`).join('')
+    + `<div style="border-top:1px solid #334155;margin-top:6px;padding-top:6px;"><span>Monthly Total</span><span>₹${(total*30).toFixed(0)}</span></div>`;
+}
+
+render();
+</script>
+</body>
+</html>

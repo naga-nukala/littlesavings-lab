@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Savings Lab | Style Switcher</title>
+<style>
+:root { --bg:#0d1417; --panel:#172226; --line:#304044; --text:#f4f5ee; --muted:#9ba9a7; --mint:#a9e7c5; --coral:#ff9276; }
+* { box-sizing:border-box; }
+html,body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
+body { display:flex; flex-direction:column; }
+.control-bar { position:relative; z-index:20; display:flex; align-items:center; gap:16px; min-height:64px; padding:10px 18px; border-bottom:1px solid var(--line); background:#111b1ecc; box-shadow:0 8px 30px #0006; }
+.brand { margin-right:auto; color:var(--text); font-weight:700; letter-spacing:-.03em; white-space:nowrap; }
+.brand span { color:var(--coral); }
+.style-info { display:flex; align-items:center; gap:8px; min-width:205px; color:var(--muted); font-size:12px; }
+.style-info strong { color:var(--text); font-size:13px; }
+.style-dot { width:8px; height:8px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 5px #a9e7c51c; }
+.controls { display:flex; align-items:center; gap:7px; }
+.controls button { min-width:35px; height:34px; border:1px solid var(--line); border-radius:7px; color:var(--text); background:#1c2a2d; cursor:pointer; font-size:16px; }
+.controls button:hover { border-color:var(--mint); color:var(--mint); }
+#shuffle { width:auto; padding:0 12px; font-size:12px; }
+.remember { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; white-space:nowrap; cursor:pointer; }
+.remember input { accent-color:var(--mint); }
+.frame { position:relative; flex:1; min-height:0; }
+iframe { display:block; width:100%; height:100%; border:0; background:var(--bg); }
+.loading { position:absolute; inset:0; z-index:5; display:grid; place-items:center; color:var(--muted); background:var(--bg); pointer-events:none; opacity:0; transition:opacity .2s ease; }
+.loading.visible { opacity:1; }
+.loading span { display:block; width:26px; height:26px; margin:auto auto 10px; border:2px solid var(--line); border-top-color:var(--mint); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.toast { position:fixed; left:50%; bottom:24px; z-index:30; padding:10px 14px; border:1px solid var(--line); border-radius:7px; color:var(--text); background:#1e2b2dcc; box-shadow:0 10px 30px #0008; font-size:12px; transform:translate(-50%,15px); opacity:0; pointer-events:none; transition:.25s ease; }
+.toast.show { transform:translate(-50%,0); opacity:1; }
+@media (max-width:720px) { .control-bar { flex-wrap:wrap; gap:9px 12px; padding:10px 12px; } .brand { width:100%; margin:0; } .style-info { min-width:0; flex:1; } .remember { order:3; } }
+</style>
+</head>
+<body>
+<header class="control-bar">
+  <div class="brand">Little <span>Savings Lab</span></div>
+  <div class="style-info"><i class="style-dot"></i><span>Style <strong id="style-name">Loading...</strong></span></div>
+  <nav class="controls" aria-label="Index style controls">
+    <button id="previous" type="button" aria-label="Previous style">←</button>
+    <button id="shuffle" type="button">Random style</button>
+    <button id="next" type="button" aria-label="Next style">→</button>
+  </nav>
+  <label class="remember"><input id="remember" type="checkbox"> Remember this style</label>
+</header>
+<main class="frame"><div class="loading" id="loading"><div><span></span>Loading style...</div></div><iframe id="style-frame" title="Selected Little Savings Lab index"></iframe></main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const styles = [
+  { file:"index.html", name:"Classic cards" },
+  { file:"index-flip-cards.html", name:"Flip cards" },
+  { file:"index-cards-rotator.html", name:"Card rotator" },
+  { file:"index-airport-board.html", name:"Airport board" },
+  { file:"index-node-cluster.html", name:"Node cluster" }
+];
+const frame = document.getElementById("style-frame");
+const loading = document.getElementById("loading");
+const styleName = document.getElementById("style-name");
+const remember = document.getElementById("remember");
+const toast = document.getElementById("toast");
+const savedStyle = Number(localStorage.getItem("savings-tools-style-index"));
+const shouldRemember = localStorage.getItem("savings-tools-remember") === "true";
+let current = shouldRemember && Number.isInteger(savedStyle) && savedStyle >= 0 && savedStyle < styles.length ? savedStyle : Math.floor(Math.random() * styles.length);
+function show(index, message) {
+  current = (index + styles.length) % styles.length;
+  const style = styles[current];
+  styleName.textContent = style.name;
+  loading.classList.add("visible");
+  frame.src = style.file;
+  if (message) {
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(show.toastTimer);
+    show.toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+  if (remember.checked) localStorage.setItem("savings-tools-style-index", String(current));
+}
+frame.addEventListener("load", () => loading.classList.remove("visible"));
+remember.checked = shouldRemember;
+remember.addEventListener("change", () => {
+  localStorage.setItem("savings-tools-remember", String(remember.checked));
+  if (remember.checked) localStorage.setItem("savings-tools-style-index", String(current));
+  toast.textContent = remember.checked ? "This style will open next time." : "Random style on each visit restored.";
+  toast.classList.add("show");
+  clearTimeout(show.toastTimer);
+  show.toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+});
+document.getElementById("previous").addEventListener("click", () => show(current - 1, `Showing ${styles[(current - 1 + styles.length) % styles.length].name}`));
+document.getElementById("next").addEventListener("click", () => show(current + 1, `Showing ${styles[(current + 1) % styles.length].name}`));
+document.getElementById("shuffle").addEventListener("click", () => { let next = current; while (next === current) next = Math.floor(Math.random() * styles.length); show(next, `Randomized to ${styles[next].name}`); });
+document.addEventListener("keydown", event => { if (event.key === "ArrowLeft") show(current - 1); if (event.key === "ArrowRight") show(current + 1); });
+show(current);
+</script>
+</body>
+</html>

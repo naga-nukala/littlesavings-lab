@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Comparator</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:640px;margin:0 auto;}
+  h1{font-size:20px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;}
+  label{display:block;font-size:11px;color:var(--sub);margin-bottom:4px;}
+  input, select{width:100%;padding:9px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:14px;}
+  input:focus, select:focus{outline:2px solid var(--acc);}
+  .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .field{flex:1;min-width:90px;}
+  button.add{width:100%;padding:12px;border:none;border-radius:10px;background:var(--acc);color:#052e16;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px;}
+
+  .group{margin-bottom:16px;}
+  .group-title{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .entry{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #334155;font-size:13px;}
+  .entry:last-child{border-bottom:none;}
+  .entry .meta{color:var(--sub);}
+  .entry .ppu{font-weight:700;}
+  .best{color:var(--acc);}
+  .worse{color:var(--bad);}
+  .tag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.15);color:var(--acc);font-weight:700;margin-left:6px;}
+  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;margin-left:8px;}
+  .empty{text-align:center;color:var(--sub);font-size:13px;padding:20px;}
+  .clear-btn{background:none;border:none;color:var(--bad);font-size:12px;cursor:pointer;float:right;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛒 Price Comparator</h1>
+  <p class="sub">Compare any item across DMart, Reliance, or other stores by price-per-unit. Saved automatically for next time.</p>
+
+  <div class="card">
+    <div class="row">
+      <div class="field"><label>Item Name</label><input type="text" id="itemName" placeholder="e.g. Toor Dal"></div>
+      <div class="field"><label>Store</label><input type="text" id="store" placeholder="e.g. DMart"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Price (₹)</label><input type="number" id="price" placeholder="e.g. 150"></div>
+      <div class="field"><label>Quantity</label><input type="number" id="qty" placeholder="e.g. 1"></div>
+      <div class="field">
+        <label>Unit</label>
+        <select id="unit">
+          <option value="g">grams (g)</option>
+          <option value="kg">kilograms (kg)</option>
+          <option value="ml">millilitres (ml)</option>
+          <option value="l">litres (l)</option>
+          <option value="pcs">pieces</option>
+        </select>
+      </div>
+    </div>
+    <button class="add" onclick="addEntry()">+ Add Price</button>
+  </div>
+
+  <div class="card">
+    <label style="font-size:14px;color:var(--txt);font-weight:700;">Saved Comparisons <button class="clear-btn" onclick="clearAll()">Clear All</button></label>
+    <div id="groupsContainer"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'price_comparator_entries';
+let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function toBaseUnit(qty, unit){
+  // returns { baseQty, baseUnitLabel }
+  if(unit==='kg') return { baseQty: qty*1000, label:'g' };
+  if(unit==='l') return { baseQty: qty*1000, label:'ml' };
+  return { baseQty: qty, label: unit };
+}
+
+function addEntry(){
+  const name = document.getElementById('itemName').value.trim();
+  const store = document.getElementById('store').value.trim() || 'Unknown';
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const qty = parseFloat(document.getElementById('qty').value) || 0;
+  const unit = document.getElementById('unit').value;
+
+  if(!name || price<=0 || qty<=0) return;
+
+  const { baseQty, label } = toBaseUnit(qty, unit);
+  const ppu = price / baseQty;
+
+  entries.push({ id: Date.now(), name, store, price, qty, unit, ppu, unitLabel: label });
+  save();
+
+  document.getElementById('itemName').value='';
+  document.getElementById('store').value='';
+  document.getElementById('price').value='';
+  document.getElementById('qty').value='';
+  document.getElementById('itemName').focus();
+
+  render();
+}
+
+function removeEntry(id){
+  entries = entries.filter(e=>e.id!==id);
+  save();
+  render();
+}
+
+function clearAll(){
+  if(!confirm('Clear all saved prices?')) return;
+  entries = [];
+  save();
+  render();
+}
+
+function render(){
+  const container = document.getElementById('groupsContainer');
+  if(entries.length===0){
+    container.innerHTML = '<div class="empty">No items saved yet. Add your first price above.</div>';
+    return;
+  }
+
+  const groups = {};
+  entries.forEach(e=>{
+    const key = e.name.toLowerCase().trim();
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  container.innerHTML = Object.keys(groups).sort().map(key=>{
+    const list = groups[key].sort((a,b)=>a.ppu-b.ppu);
+    const displayName = list[0].name;
+    const minPpu = list[0].ppu;
+    const rows = list.map((e,i)=>{
+      const isBest = i===0 && list.length>1;
+      const pctMore = minPpu>0 ? ((e.ppu-minPpu)/minPpu)*100 : 0;
+      return `
+        <div class="entry">
+          <span>${e.store} <span class="meta">— ₹${e.price} / ${e.qty}${e.unit}</span>${isBest?'<span class="tag">CHEAPEST</span>':''}</span>
+          <span>
+            <span class="ppu ${i===0?'best':(pctMore>15?'worse':'')}">₹${e.ppu.toFixed(3)}/${e.unitLabel}</span>
+            <button class="del" onclick="removeEntry(${e.id})">✕</button>
+          </span>
+        </div>
+      `;
+    }).join('');
+    return `<div class="group"><div class="group-title">${displayName}</div>${rows}</div>`;
+  }).join('');
+}
+
+render();
+</script>
+</body>
+</html>

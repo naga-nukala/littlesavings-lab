@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Fund Calculator</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:520px;margin:0 auto;}
+  h1{font-size:20px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;}
+  label{display:block;font-size:14px;margin-bottom:6px;font-weight:600;}
+  .hint{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:15px;}
+  input:focus{outline:2px solid var(--acc);}
+  .result-box{text-align:center;padding:24px 16px;}
+  .result-num{font-size:36px;font-weight:800;color:var(--acc);}
+  .result-label{color:var(--sub);font-size:13px;margin-top:2px;}
+  .bar{height:12px;border-radius:6px;background:#334155;overflow:hidden;margin-top:14px;}
+  .bar-fill{height:100%;background:var(--acc);transition:width .3s;}
+  .bar-text{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:6px;}
+  .subgrid{display:flex;gap:8px;margin-top:14px;}
+  .subcard{flex:1;background:#0f172a;border-radius:10px;padding:10px;text-align:center;}
+  .subcard .n{font-size:16px;font-weight:700;}
+  .subcard .l{font-size:11px;color:var(--sub);margin-top:2px;}
+  .verdict{font-size:13px;text-align:center;margin-top:10px;color:var(--sub);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛟 Emergency Fund Calculator</h1>
+  <p class="sub">Recommended buffer: 9 months of essential expenses.</p>
+
+  <div class="card">
+    <label>Monthly Essential Expenses (₹)</label>
+    <div class="hint">Rent, food, utilities, EMIs, insurance — not discretionary spend</div>
+    <input type="number" id="monthlyExp" placeholder="e.g. 40000" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Months of Buffer Needed</label>
+    <div class="hint">Default 9 — adjust for job stability, dependents</div>
+    <input type="number" id="months" value="9" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Current Emergency Savings (₹)</label>
+    <div class="hint">Liquid funds only — savings a/c, liquid MF, FD you can break instantly</div>
+    <input type="number" id="current" value="0" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Monthly Amount You Can Save Towards This (₹)</label>
+    <input type="number" id="monthlyContrib" value="0" oninput="calc()">
+  </div>
+
+  <div class="card result-box">
+    <div class="result-num" id="targetNum">₹0</div>
+    <div class="result-label">Target Emergency Fund</div>
+
+    <div class="bar"><div class="bar-fill" id="barFill" style="width:0%;"></div></div>
+    <div class="bar-text"><span id="pctText">0% covered</span><span id="gapText">Gap: ₹0</span></div>
+
+    <div class="subgrid">
+      <div class="subcard"><div class="n" id="gapNum">₹0</div><div class="l">Shortfall</div></div>
+      <div class="subcard"><div class="n" id="monthsToGoal">--</div><div class="l">Months to Goal</div></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+</div>
+
+<script>
+function calc(){
+  const exp = parseFloat(document.getElementById('monthlyExp').value) || 0;
+  const months = parseFloat(document.getElementById('months').value) || 9;
+  const current = parseFloat(document.getElementById('current').value) || 0;
+  const contrib = parseFloat(document.getElementById('monthlyContrib').value) || 0;
+
+  const target = exp * months;
+  const gap = Math.max(0, target - current);
+  const pct = target > 0 ? Math.min(100, (current/target)*100) : 0;
+
+  document.getElementById('targetNum').textContent = '₹' + target.toLocaleString('en-IN');
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('pctText').textContent = pct.toFixed(0) + '% covered';
+  document.getElementById('gapText').textContent = 'Gap: ₹' + gap.toLocaleString('en-IN');
+  document.getElementById('gapNum').textContent = '₹' + gap.toLocaleString('en-IN');
+
+  const monthsToGoal = contrib > 0 ? Math.ceil(gap / contrib) : null;
+  document.getElementById('monthsToGoal').textContent = monthsToGoal !== null ? (monthsToGoal + ' mo') : '--';
+
+  const barEl = document.getElementById('barFill');
+  const verdictEl = document.getElementById('verdict');
+  if(pct >= 100){ barEl.style.background='var(--acc)'; verdictEl.textContent = '✅ Fully funded — great position.'; }
+  else if(pct >= 50){ barEl.style.background='var(--warn)'; verdictEl.textContent = '⚠️ Halfway there — keep building.'; }
+  else { barEl.style.background='var(--bad)'; verdictEl.textContent = '🔴 Underfunded — prioritize this before investing.'; }
+}
+calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASA vs Rupay CC Savings</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:520px;margin:0 auto;}
+  h1{font-size:20px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;}
+  label{display:block;font-size:14px;margin-bottom:6px;font-weight:600;}
+  .hint{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:15px;}
+  input:focus{outline:2px solid var(--acc);}
+  .result-box{text-align:center;padding:24px 16px;}
+  .result-num{font-size:36px;font-weight:800;}
+  .result-label{color:var(--sub);font-size:13px;margin-top:2px;}
+  .breakdown{font-size:13px;margin-top:16px;text-align:left;}
+  .breakdown div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #334155;}
+  .breakdown div:last-child{border-bottom:none;font-weight:700;color:var(--acc);}
+  .verdict{font-size:13px;text-align:center;margin-top:10px;color:var(--sub);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💳 CASA vs Rupay CC Savings</h1>
+  <p class="sub">Keep money in savings account, pay via Rupay Credit Card on UPI — earn CASA interest during the credit-free period + card rewards.</p>
+
+  <div class="card">
+    <label>Monthly Spend via Rupay CC (₹)</label>
+    <input type="number" id="spend" placeholder="e.g. 30000" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>CASA Interest Rate (% p.a.)</label>
+    <div class="hint">Your savings account interest rate</div>
+    <input type="number" id="casaRate" value="3" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Card Reward Rate (%)</label>
+    <div class="hint">Typical: 0.25% for UPI Rupay CC spends</div>
+    <input type="number" id="rewardRate" value="0.25" step="0.01" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Credit-Free Period (days)</label>
+    <div class="hint">Days money stays in your account before bill payment (~30-45)</div>
+    <input type="number" id="floatDays" value="30" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Reward Redemption Fee (₹, one-time)</label>
+    <div class="hint">Some cards charge ~₹49 to redeem points</div>
+    <input type="number" id="redemptionFee" value="49" oninput="calc()">
+  </div>
+
+  <div class="card">
+    <label>Rewards Validity / Redeem Every (months)</label>
+    <div class="hint">Points typically expire in 36 months — fee is amortized over this period. Enter fewer months if you redeem earlier.</div>
+    <input type="number" id="cycleMonths" value="36" oninput="calc()">
+  </div>
+
+  <div class="card result-box">
+    <div class="result-num" id="netNum">₹0</div>
+    <div class="result-label">Net Monthly Savings vs Direct UPI/Cash</div>
+
+    <div class="breakdown">
+      <div><span>CASA Interest (float period)</span><span id="casaAmt">₹0</span></div>
+      <div><span>Card Rewards</span><span id="rewardAmt">₹0</span></div>
+      <div><span>Redemption Fee (amortized/mo)</span><span id="feeAmt">-₹0</span></div>
+      <div><span>Net Savings/Month</span><span id="netAmt2">₹0</span></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+</div>
+
+<script>
+function calc(){
+  const spend = parseFloat(document.getElementById('spend').value) || 0;
+  const casaRate = parseFloat(document.getElementById('casaRate').value) || 0;
+  const rewardRate = parseFloat(document.getElementById('rewardRate').value) || 0;
+  const floatDays = parseFloat(document.getElementById('floatDays').value) || 0;
+  const fee = parseFloat(document.getElementById('redemptionFee').value) || 0;
+  const cycleMonths = parseFloat(document.getElementById('cycleMonths').value) || 36;
+
+  const casaInterest = spend * (casaRate/100) * (floatDays/365);
+  const reward = spend * (rewardRate/100);
+  const feeAmortized = cycleMonths > 0 ? fee / cycleMonths : fee;
+  const net = casaInterest + reward - feeAmortized;
+
+  document.getElementById('casaAmt').textContent = '₹' + casaInterest.toFixed(2);
+  document.getElementById('rewardAmt').textContent = '₹' + reward.toFixed(2);
+  document.getElementById('feeAmt').textContent = '-₹' + feeAmortized.toFixed(2);
+  document.getElementById('netAmt2').textContent = '₹' + net.toFixed(2);
+
+  const netNum = document.getElementById('netNum');
+  netNum.textContent = '₹' + net.toFixed(2);
+  netNum.style.color = net >= 0 ? 'var(--acc)' : 'var(--bad)';
+
+  const verdict = document.getElementById('verdict');
+  if(net > 50){ verdict.textContent = '✅ Worth it — meaningful monthly savings.'; }
+  else if(net >= 0){ verdict.textContent = '⚠️ Marginal — check if effort is worth it for this amount.'; }
+  else { verdict.textContent = '🔴 Losing money — redemption fee outweighs the benefit.'; }
+}
+calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Savings Lab</title>
+<script>
+  const mainIndex = "index-flip-cards.html";
+  window.location.replace(mainIndex);
+</script>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--txt:#e2e8f0;--sub:#94a3b8;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  .wrap{max-width:560px;margin:0 auto;}
+  h1{font-size:22px;margin-bottom:4px;}
+  p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
+  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:20px 0 8px 2px;}
+  .section-title:first-of-type{margin-top:0;}
+  a.card{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:var(--txt);transition:transform .15s;}
+  a.card:hover{transform:translateY(-2px);}
+  .emoji{font-size:22px;flex-shrink:0;}
+  .name{font-weight:700;font-size:14px;}
+  .desc{font-size:12px;color:var(--sub);margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💰 Little Savings Lab</h1>
+  <p class="sub">All your personal finance calculators in one place.</p>
+
+  <div class="section-title">Big Decisions</div>
+  <a class="card" href="flat-scorecard.html"><span class="emoji">🏠</span><div><div class="name">Flat Buying Scorecard</div><div class="desc">Score a flat before buying</div></div></a>
+  <a class="card" href="vehicle-cost-calculator.html"><span class="emoji">🏍️</span><div><div class="name">Bike/Car Ownership Cost</div><div class="desc">True cost incl. depreciation</div></div></a>
+  <a class="card" href="insurance-coverage-checker.html"><span class="emoji">🛡️</span><div><div class="name">Insurance Coverage Checker</div><div class="desc">Life & health cover gap</div></div></a>
+  <a class="card" href="emergency-fund-calculator.html"><span class="emoji">🛟</span><div><div class="name">Emergency Fund Calculator</div><div class="desc">9-month buffer target</div></div></a>
+
+  <div class="section-title">Monthly Bills</div>
+  <a class="card" href="mobile-cost-calculator.html"><span class="emoji">📱</span><div><div class="name">Mobile Cost & RC Calculator</div><div class="desc">Per-day cost per family member</div></div></a>
+  <a class="card" href="sim-tracker.html"><span class="emoji">📶</span><div><div class="name">Multi-SIM Tracker</div><div class="desc">Track, renew, flag idle SIMs</div></div></a>
+  <a class="card" href="internet-cost-comparator.html"><span class="emoji">📡</span><div><div class="name">Internet Cost Comparator</div><div class="desc">Effective monthly cost by plan</div></div></a>
+  <a class="card" href="ott-rotation-tracker.html"><span class="emoji">📺</span><div><div class="name">OTT Rotation Tracker</div><div class="desc">Only pay for what you're watching</div></div></a>
+
+  <div class="section-title">Banking & Cards</div>
+  <a class="card" href="bank-fees-tracker.html"><span class="emoji">🏦</span><div><div class="name">Bank Fees & Card Tracker</div><div class="desc">Keep or close each card</div></div></a>
+  <a class="card" href="cc-cashback-calculator.html"><span class="emoji">💸</span><div><div class="name">Credit Card Cashback Calculator</div><div class="desc">Online/Offline/Utilities cashback</div></div></a>
+  <a class="card" href="casa-rupay-calculator.html"><span class="emoji">💳</span><div><div class="name">CASA vs Rupay CC Savings</div><div class="desc">Float interest + rewards math</div></div></a>
+  <a class="card" href="gift-card-calculator.html"><span class="emoji">🎁</span><div><div class="name">Gift Card Savings Calculator</div><div class="desc">Compare discount offers</div></div></a>
+
+  <div class="section-title">Shopping & Health</div>
+  <a class="card" href="price-comparator.html"><span class="emoji">🛒</span><div><div class="name">Price Comparator</div><div class="desc">Any item, any store, per-unit</div></div></a>
+  <a class="card" href="dmart-checklist.html"><span class="emoji">🧺</span><div><div class="name">DMart Shopping Checklist</div><div class="desc">Budget tracker + saving reminders</div></div></a>
+  <a class="card" href="medicine-lab-comparator.html"><span class="emoji">💊</span><div><div class="name">Medicine & Lab Test Comparator</div><div class="desc">MRP vs platform prices</div></div></a>
+
+  <div class="section-title">Planning</div>
+  <a class="card" href="money-framework-dashboard.html"><span class="emoji">📊</span><div><div class="name">Money Framework Dashboard</div><div class="desc">Inflow, outflow, debts, savings</div></div></a>
+  <a class="card" href="travel-mode-comparator.html"><span class="emoji">🚆</span><div><div class="name">Travel Mode Comparator</div><div class="desc">Train/bus/car by group size</div></div></a>
+  <a class="card" href="yield-stack.html"><span class="emoji">📈</span><div><div class="name">Yield Stack</div><div class="desc">Stack rates, taxes, and returns</div></div></a>
+</div>
+</body>
+</html>
