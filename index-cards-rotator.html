@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Little Savings Lab | Card Rotator</title>
+<title>Savings Lab | Card Rotator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +16,7 @@ button, a { font:inherit; }
 .shell { width:min(1120px,calc(100% - 40px)); margin:0 auto; }
 .topbar { display:flex; align-items:center; justify-content:space-between; padding:26px 0; }
 .brand { display:flex; align-items:center; gap:11px; color:var(--text); text-decoration:none; font:700 15px "Space Grotesk",sans-serif; letter-spacing:-.03em; }
+.brand small { display:block; margin-top:3px; color:var(--muted); font:11px "DM Sans",sans-serif; letter-spacing:0; }
 .brand-mark { width:29px; height:29px; border:2px solid var(--mint); border-radius:9px; transform:rotate(12deg); position:relative; }
 .brand-mark::after { content:""; position:absolute; width:7px; height:7px; right:-5px; bottom:3px; border-radius:50%; background:var(--coral); box-shadow:-11px -8px 0 var(--gold); }
 .top-link { color:var(--muted); text-decoration:none; font-size:12px; border-bottom:1px solid var(--line); padding-bottom:4px; }
@@ -64,7 +65,7 @@ h1 span { color:var(--coral); }
 </head>
 <body>
 <header class="shell topbar">
-  <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span>Little Savings Lab</span></a>
+  <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span>Savings Lab<small>Powered by Little Savings</small></span></a>
   <a class="top-link" href="index-flip-cards.html">View flip-card index</a>
 </header>
 <main class="shell">
@@ -77,15 +78,16 @@ h1 span { color:var(--coral); }
     <button class="arrow arrow-left" id="previous" type="button" aria-label="Previous card">←</button>
     <div class="rotator" id="rotator"></div>
     <button class="arrow arrow-right" id="next" type="button" aria-label="Next card">→</button>
-    <div class="progress"><span class="progress-count" id="progress-count">01 / 21</span><div class="dots" id="dots"></div></div>
+    <div class="progress"><span class="progress-count" id="progress-count">01 / 28</span><div class="dots" id="dots"></div></div>
     <p class="hint">Cards rotate automatically · use ← → to browse</p>
   </section>
 </main>
-<footer class="shell footer"><span>Personal finance, made more tangible.</span><strong>21 tools for clearer choices.</strong></footer>
+<footer class="shell footer"><span>Personal finance, made more tangible.</span><strong>28 tools for clearer choices.</strong></footer>
 <script>
 const tools = [
   ["Flat Buying Scorecard", "flat-scorecard.html", "🏠", "Big decisions", "Score a flat before buying."],
   ["Bike/Car Ownership Cost", "vehicle-cost-calculator.html", "🏍️", "Big decisions", "Find the true cost, including depreciation."],
+  ["Rent vs Buy Calculator", "rent-vs-buy-calculator.html", "🏘️", "Big decisions", "Compare the long-term cost of renting versus owning."],
   ["Insurance Coverage Checker", "insurance-coverage-checker.html", "🛡️", "Big decisions", "See your life and health cover gap."],
   ["Emergency Fund Calculator", "emergency-fund-calculator.html", "🛟", "Big decisions", "Set a practical buffer target."],
   ["Mobile Cost & RC Calculator", "mobile-cost-calculator.html", "📱", "Monthly bills", "Calculate the daily cost of every connection."],
@@ -93,6 +95,8 @@ const tools = [
   ["Internet Cost Comparator", "internet-cost-comparator.html", "📡", "Monthly bills", "Compare the effective monthly cost of plans."],
   ["OTT Rotation Tracker", "ott-rotation-tracker.html", "📺", "Monthly bills", "Only pay for what you are watching."],
   ["Auto-Debit Tracker", "autodebit-tracker.html", "🔁", "Monthly bills", "Track recurring payments and due dates."],
+  ["House Expenses Cashback Tracker", "house-expenses-cashback-tracker.html", "🏠", "Monthly bills", "Track household bills and cashback by card."],
+  ["Per-Day Cost Calculator", "perday-cost-calculator.html", "📆", "Monthly bills", "Convert daily recurring spends into one clear figure."],
   ["Bank Fees & Card Tracker", "bank-fees-tracker.html", "🏦", "Banking & cards", "Decide which cards to keep or close."],
   ["Credit Card Cashback Calculator", "cc-cashback-calculator.html", "💸", "Banking & cards", "Compare online, offline, and utility cashback."],
   ["CASA vs Rupay CC Savings", "casa-rupay-calculator.html", "💳", "Banking & cards", "Work out float interest and rewards."],
@@ -104,7 +108,11 @@ const tools = [
   ["Travel Mode Comparator", "travel-mode-comparator.html", "🚆", "Planning", "Compare train, bus, and car by group size."],
   ["Yield Stack", "yield-stack.html", "📈", "Planning", "Stack rates, taxes, and returns."],
   ["Investment Appreciation Tracker", "investment-appreciation-tracker.html", "📊", "Planning", "Track gains across investments."],
-  ["Micro-Investment Redirect", "micro-investment-tracker.html", "🌱", "Planning", "Turn small savings into investments."]
+  ["Micro-Investment Redirect", "micro-investment-tracker.html", "🌱", "Planning", "Turn small savings into investments."],
+  ["Debt Dashboard", "debt-dashboard.html", "💳", "Planning", "Track every loan, EMI, and payoff timeline."],
+  ["Financial Life Plan", "financial-life-plan.html", "🧭", "Planning", "Map life-stage goals and protection gaps."],
+  ["Net Worth Tracker", "net-worth-tracker.html", "💼", "Planning", "Keep assets, liabilities, and net worth in view."],
+  ["Tax Regime Comparator", "tax-regime-comparator.html", "📉", "Planning", "Compare old and new tax regimes before filing."]
 ];
 let current = 0;
 let timer;

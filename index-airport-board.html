@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Little Savings Lab | Departure Board</title>
+<title>Savings Lab | Departure Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +14,7 @@ body { margin:0; min-width:320px; color:var(--ink); font-family:"DM Mono",monosp
 .shell { width:min(1180px,calc(100% - 36px)); margin:0 auto; }
 .topbar { display:flex; align-items:center; justify-content:space-between; padding:26px 0; font-family:"Space Grotesk",sans-serif; }
 .brand { color:var(--ink); text-decoration:none; font-weight:700; letter-spacing:-.04em; }
+.brand small { display:block; margin-top:3px; color:var(--muted); font:11px "DM Mono",monospace; letter-spacing:0; }
 .brand span { color:var(--amber); }
 .topbar a:last-child { color:var(--muted); text-decoration:none; font:12px "DM Mono",monospace; border-bottom:1px solid var(--line); padding-bottom:4px; }
 .topbar a:last-child:hover { color:var(--mint); border-color:var(--mint); }
@@ -46,15 +47,15 @@ h1 span { color:var(--amber); }
 </style>
 </head>
 <body>
-<header class="shell topbar"><a class="brand" href="index.html">LITTLE <span>//</span> SAVINGS LAB</a><a href="index-cards-rotator.html">View card rotator</a></header>
+<header class="shell topbar"><a class="brand" href="index.html">SAVINGS LAB <span>//</span><small>Powered by Little Savings</small></a><a href="index-cards-rotator.html">View card rotator</a></header>
 <main class="shell">
   <section class="hero"><div class="eyebrow">Live personal finance departures</div><h1>Choose your next <span>destination.</span></h1><p class="lede">An airport departure board for your money decisions. Every tool is ready for boarding. Select a row to open it.</p></section>
   <section class="board-frame" aria-label="Savings tools departure board"><div class="board-header"><span>Destination / tool</span><span>Terminal</span><span>Status</span></div><div id="board"></div></section>
 </main>
-<footer class="shell footer"><span>BOARD UPDATED <strong id="clock"></strong></span><span>21 TOOLS / ALL SYSTEMS READY</span></footer>
+<footer class="shell footer"><span>BOARD UPDATED <strong id="clock"></strong></span><span>28 TOOLS / ALL SYSTEMS READY</span></footer>
 <script>
 const tools = [
-["Flat Buying Scorecard","flat-scorecard.html","🏠","Big decisions"],["Bike/Car Ownership Cost","vehicle-cost-calculator.html","🏍️","Big decisions"],["Insurance Coverage Checker","insurance-coverage-checker.html","🛡️","Big decisions"],["Emergency Fund Calculator","emergency-fund-calculator.html","🛟","Big decisions"],["Mobile Cost & RC Calculator","mobile-cost-calculator.html","📱","Monthly bills"],["Multi-SIM Tracker","sim-tracker.html","📶","Monthly bills"],["Internet Cost Comparator","internet-cost-comparator.html","📡","Monthly bills"],["OTT Rotation Tracker","ott-rotation-tracker.html","📺","Monthly bills"],["Auto-Debit Tracker","autodebit-tracker.html","🔁","Monthly bills"],["Bank Fees & Card Tracker","bank-fees-tracker.html","🏦","Banking & cards"],["Credit Card Cashback Calculator","cc-cashback-calculator.html","💸","Banking & cards"],["CASA vs Rupay CC Savings","casa-rupay-calculator.html","💳","Banking & cards"],["Gift Card Savings Calculator","gift-card-calculator.html","🎁","Banking & cards"],["Price Comparator","price-comparator.html","🛒","Shopping & health"],["DMart Shopping Checklist","dmart-checklist.html","🧺","Shopping & health"],["Medicine & Lab Test Comparator","medicine-lab-comparator.html","💊","Shopping & health"],["Money Framework Dashboard","money-framework-dashboard.html","📊","Planning"],["Travel Mode Comparator","travel-mode-comparator.html","🚆","Planning"],["Yield Stack","yield-stack.html","📈","Planning"],["Investment Appreciation Tracker","investment-appreciation-tracker.html","📊","Planning"],["Micro-Investment Redirect","micro-investment-tracker.html","🌱","Planning"]
+["Flat Buying Scorecard","flat-scorecard.html","🏠","Big decisions"],["Bike/Car Ownership Cost","vehicle-cost-calculator.html","🏍️","Big decisions"],["Rent vs Buy Calculator","rent-vs-buy-calculator.html","🏘️","Big decisions"],["Insurance Coverage Checker","insurance-coverage-checker.html","🛡️","Big decisions"],["Emergency Fund Calculator","emergency-fund-calculator.html","🛟","Big decisions"],["Mobile Cost & RC Calculator","mobile-cost-calculator.html","📱","Monthly bills"],["Multi-SIM Tracker","sim-tracker.html","📶","Monthly bills"],["Internet Cost Comparator","internet-cost-comparator.html","📡","Monthly bills"],["OTT Rotation Tracker","ott-rotation-tracker.html","📺","Monthly bills"],["Auto-Debit Tracker","autodebit-tracker.html","🔁","Monthly bills"],["House Expenses Cashback Tracker","house-expenses-cashback-tracker.html","🏠","Monthly bills"],["Per-Day Cost Calculator","perday-cost-calculator.html","📆","Monthly bills"],["Bank Fees & Card Tracker","bank-fees-tracker.html","🏦","Banking & cards"],["Credit Card Cashback Calculator","cc-cashback-calculator.html","💸","Banking & cards"],["CASA vs Rupay CC Savings","casa-rupay-calculator.html","💳","Banking & cards"],["Gift Card Savings Calculator","gift-card-calculator.html","🎁","Banking & cards"],["Price Comparator","price-comparator.html","🛒","Shopping & health"],["DMart Shopping Checklist","dmart-checklist.html","🧺","Shopping & health"],["Medicine & Lab Test Comparator","medicine-lab-comparator.html","💊","Shopping & health"],["Money Framework Dashboard","money-framework-dashboard.html","📊","Planning"],["Travel Mode Comparator","travel-mode-comparator.html","🚆","Planning"],["Yield Stack","yield-stack.html","📈","Planning"],["Investment Appreciation Tracker","investment-appreciation-tracker.html","📊","Planning"],["Micro-Investment Redirect","micro-investment-tracker.html","🌱","Planning"],["Debt Dashboard","debt-dashboard.html","💳","Planning"],["Financial Life Plan","financial-life-plan.html","🧭","Planning"],["Net Worth Tracker","net-worth-tracker.html","💼","Planning"],["Tax Regime Comparator","tax-regime-comparator.html","📉","Planning"]
 ];
 const board = document.getElementById("board");
 function tiles(text, index) { return [...text.slice(0, 3)].map((char, tileIndex) => `<span class="tile" style="animation-delay:${(index * 35) + tileIndex * 65}ms">${char}</span>`).join(""); }

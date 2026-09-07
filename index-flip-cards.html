@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Little Savings Lab | Flip Index</title>
+<title>Savings Lab | Flip Index</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -38,6 +38,7 @@ button { color: inherit; }
 .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px 0; }
 .logo { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-family: "Space Grotesk", sans-serif; font-weight: 700; letter-spacing: -.03em; }
+.brand-subtitle { display: block; margin-top: 3px; color: var(--muted); font: 11px "DM Sans", sans-serif; letter-spacing: .02em; }
 .logo-mark { width: 30px; height: 30px; position: relative; transform: rotate(-8deg); }
 .logo-mark::before, .logo-mark::after { content: ""; position: absolute; border: 2px solid var(--mint); border-radius: 7px; }
 .logo-mark::before { inset: 0 7px 7px 0; }
@@ -69,6 +70,11 @@ h1 em { color: var(--coral); font-style: normal; }
 .section-head h2 { margin: 0; font-family: "Space Grotesk", sans-serif; font-size: 25px; letter-spacing: -.045em; }
 .section-head p { margin: 0; color: var(--quiet); font-size: 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+.tool-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.search { flex: 1; min-width: 180px; border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; color: var(--ink); background: var(--panel); outline: none; }
+.search:focus { border-color: var(--mint); box-shadow: 0 0 0 3px #a7e8c520; }
+.favorites-only { border: 1px solid var(--line); border-radius: 9px; padding: 10px 13px; color: var(--muted); background: transparent; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.favorites-only:hover, .favorites-only.active { color: var(--night); border-color: var(--yellow); background: var(--yellow); }
 .filter { border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; color: var(--muted); background: transparent; cursor: pointer; font-size: 12px; }
 .filter:hover, .filter.active { color: var(--night); border-color: var(--mint); background: var(--mint); }
 .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; padding-bottom: 64px; }
@@ -87,6 +93,9 @@ h1 em { color: var(--coral); font-style: normal; }
 .card-cta { color: var(--yellow); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .card-back .card-desc { color: #31574b; }
 .card-back .card-cta { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--night); text-decoration: none; border-bottom: 1px solid #31574b; padding-bottom: 4px; }
+.favorite { position: relative; z-index: 2; border: 0; padding: 2px; color: var(--muted); background: transparent; cursor: pointer; font-size: 20px; line-height: 1; }
+.favorite.active { color: var(--coral); }
+.favorite:focus-visible, .favorites-only:focus-visible, .search:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
 .empty { grid-column: 1 / -1; padding: 40px; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 15px; }
 .footer { padding: 18px 0 35px; color: var(--quiet); font-size: 12px; border-top: 1px solid #ffffff0d; }
 @media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 20px; padding-top: 30px; } .hero-visual { max-width: 600px; width: 100%; margin: 0 auto; } .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -96,7 +105,8 @@ h1 em { color: var(--coral); font-style: normal; }
 </head>
 <body>
 <header class="shell topbar">
-  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true"></span><span>Little Savings Lab</span></a>
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true"></span><span><strong>Savings Lab</strong><span class="brand-subtitle">Powered by Little Savings</span></span></a>
+  <a class="top-link" href="index.html">Classic view</a>
 </header>
 <main class="shell">
   <section class="hero" aria-labelledby="page-title">
@@ -116,7 +126,8 @@ h1 em { color: var(--coral); font-style: normal; }
     </div>
   </section>
   <section aria-labelledby="tools-title">
-    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">21 tools / tap a card to flip it</p></div>
+    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">28 tools / tap a card to flip it</p></div>
+    <div class="tool-controls"><input class="search" id="search" type="search" placeholder="Search tools" aria-label="Search tools"><button class="favorites-only" id="favorites-only" type="button">Show favorites</button></div>
     <div class="filters" id="filters" role="toolbar" aria-label="Filter tools"></div>
     <div class="card-grid" id="card-grid"></div>
   </section>
@@ -126,6 +137,7 @@ h1 em { color: var(--coral); font-style: normal; }
 const tools = [
   { name: "Flat Buying Scorecard", file: "flat-scorecard.html", icon: "🏠", category: "Big decisions", description: "Score a flat before buying." },
   { name: "Bike/Car Ownership Cost", file: "vehicle-cost-calculator.html", icon: "🏍️", category: "Big decisions", description: "Find the true cost, including depreciation." },
+  { name: "Rent vs Buy Calculator", file: "rent-vs-buy-calculator.html", icon: "🏘️", category: "Big decisions", description: "Compare the long-term cost of renting versus owning." },
   { name: "Insurance Coverage Checker", file: "insurance-coverage-checker.html", icon: "🛡️", category: "Big decisions", description: "See your life and health cover gap." },
   { name: "Emergency Fund Calculator", file: "emergency-fund-calculator.html", icon: "🛟", category: "Big decisions", description: "Set a practical buffer target." },
   { name: "Mobile Cost & RC Calculator", file: "mobile-cost-calculator.html", icon: "📱", category: "Monthly bills", description: "Calculate the daily cost of every connection." },
@@ -133,6 +145,8 @@ const tools = [
   { name: "Internet Cost Comparator", file: "internet-cost-comparator.html", icon: "📡", category: "Monthly bills", description: "Compare the effective monthly cost of plans." },
   { name: "OTT Rotation Tracker", file: "ott-rotation-tracker.html", icon: "📺", category: "Monthly bills", description: "Only pay for what you are watching." },
   { name: "Auto-Debit Tracker", file: "autodebit-tracker.html", icon: "🔁", category: "Monthly bills", description: "Track recurring payments and due dates." },
+  { name: "House Expenses Cashback Tracker", file: "house-expenses-cashback-tracker.html", icon: "🏠", category: "Monthly bills", description: "Track household bills and cashback by card." },
+  { name: "Per-Day Cost Calculator", file: "perday-cost-calculator.html", icon: "📆", category: "Monthly bills", description: "Convert daily recurring spends into one clear figure." },
   { name: "Bank Fees & Card Tracker", file: "bank-fees-tracker.html", icon: "🏦", category: "Banking & cards", description: "Decide which cards to keep or close." },
   { name: "Credit Card Cashback Calculator", file: "cc-cashback-calculator.html", icon: "💸", category: "Banking & cards", description: "Compare online, offline, and utility cashback." },
   { name: "CASA vs Rupay CC Savings", file: "casa-rupay-calculator.html", icon: "💳", category: "Banking & cards", description: "Work out float interest and rewards." },
@@ -144,11 +158,19 @@ const tools = [
   { name: "Travel Mode Comparator", file: "travel-mode-comparator.html", icon: "🚆", category: "Planning", description: "Compare train, bus, and car by group size." },
   { name: "Yield Stack", file: "yield-stack.html", icon: "📈", category: "Planning", description: "Stack rates, taxes, and returns." },
   { name: "Investment Appreciation Tracker", file: "investment-appreciation-tracker.html", icon: "📊", category: "Planning", description: "Track gains across investments." },
-  { name: "Micro-Investment Redirect", file: "micro-investment-tracker.html", icon: "🌱", category: "Planning", description: "Turn small savings into investments." }
+  { name: "Micro-Investment Redirect", file: "micro-investment-tracker.html", icon: "🌱", category: "Planning", description: "Turn small savings into investments." },
+  { name: "Debt Dashboard", file: "debt-dashboard.html", icon: "💳", category: "Planning", description: "Track every loan, EMI, and payoff timeline." },
+  { name: "Financial Life Plan", file: "financial-life-plan.html", icon: "🧭", category: "Planning", description: "Map life-stage goals and protection gaps." },
+  { name: "Net Worth Tracker", file: "net-worth-tracker.html", icon: "💼", category: "Planning", description: "Keep assets, liabilities, and net worth in view." },
+  { name: "Tax Regime Comparator", file: "tax-regime-comparator.html", icon: "📉", category: "Planning", description: "Compare old and new tax regimes before filing." }
 ];
 const featured = [tools[17], tools[15], tools[8], tools[12]];
 let activeCategory = "All tools";
+let searchTerm = "";
+let favoritesOnly = false;
 let slideIndex = 0;
+const favoritesKey = "savings-tools-favorites";
+const favorites = new Set(JSON.parse(localStorage.getItem(favoritesKey) || "[]"));
 const grid = document.getElementById("card-grid");
 const filters = document.getElementById("filters");
 const count = document.getElementById("tool-count");
@@ -163,18 +185,30 @@ function renderFilters() {
   }));
 }
 function renderCards() {
-  const visibleTools = activeCategory === "All tools" ? tools : tools.filter(tool => tool.category === activeCategory);
+  const visibleTools = tools.filter(tool => {
+    const matchesCategory = activeCategory === "All tools" || tool.category === activeCategory;
+    const matchesSearch = `${tool.name} ${tool.description} ${tool.category}`.toLowerCase().includes(searchTerm);
+    const matchesFavorite = !favoritesOnly || favorites.has(tool.file);
+    return matchesCategory && matchesSearch && matchesFavorite;
+  }).sort((first, second) => Number(favorites.has(second.file)) - Number(favorites.has(first.file)));
   count.textContent = `${visibleTools.length} ${visibleTools.length === 1 ? "tool" : "tools"} / tap a card to flip it`;
   grid.innerHTML = visibleTools.length ? visibleTools.map((tool, index) => `<article class="card" tabindex="0" aria-label="${tool.name}">
     <div class="card-inner">
-      <div class="card-face card-front"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">${String(index + 1).padStart(2, "0")}</span></div><div><h3>${tool.name}</h3></div><span class="card-cta">Flip for details</span></div>
+      <div class="card-face card-front"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><div><button class="favorite${favorites.has(tool.file) ? " active" : ""}" type="button" data-file="${tool.file}" aria-label="${favorites.has(tool.file) ? "Remove" : "Add"} ${tool.name} ${favorites.has(tool.file) ? "from" : "to"} favorites" aria-pressed="${favorites.has(tool.file)}">★</button><span class="card-index">${String(index + 1).padStart(2, "0")}</span></div></div><div><h3>${tool.name}</h3></div><span class="card-cta">Flip for details</span></div>
       <div class="card-face card-back"><div class="card-top"><span class="card-icon" aria-hidden="true">${tool.icon}</span><span class="card-index">ABOUT</span></div><div><h3>${tool.name}</h3><p class="card-desc">${tool.description}</p></div><a class="card-cta" href="${tool.file}">Open tool <span aria-hidden="true">↗</span></a></div>
     </div>
   </article>`).join("") : '<div class="empty">No tools in this category yet.</div>';
   grid.querySelectorAll(".card").forEach(card => {
-    card.addEventListener("click", event => { if (!event.target.closest("a")) card.classList.toggle("flipped"); });
+    card.addEventListener("click", event => { if (!event.target.closest("a, button")) card.classList.toggle("flipped"); });
     card.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.classList.toggle("flipped"); } });
   });
+  grid.querySelectorAll(".favorite").forEach(button => button.addEventListener("click", event => {
+    event.stopPropagation();
+    const file = button.dataset.file;
+    favorites.has(file) ? favorites.delete(file) : favorites.add(file);
+    localStorage.setItem(favoritesKey, JSON.stringify([...favorites]));
+    renderCards();
+  }));
 }
 function renderSlide() {
   const tool = featured[slideIndex];
@@ -187,6 +221,8 @@ function renderSlide() {
 function moveSlide(step) { slideIndex = (slideIndex + step + featured.length) % featured.length; renderSlide(); }
 document.getElementById("previous").addEventListener("click", () => moveSlide(-1));
 document.getElementById("next").addEventListener("click", () => moveSlide(1));
+document.getElementById("search").addEventListener("input", event => { searchTerm = event.target.value.trim().toLowerCase(); renderCards(); });
+document.getElementById("favorites-only").addEventListener("click", event => { favoritesOnly = !favoritesOnly; event.currentTarget.classList.toggle("active", favoritesOnly); renderCards(); });
 setInterval(() => moveSlide(1), 5000);
 renderFilters();
 renderCards();
