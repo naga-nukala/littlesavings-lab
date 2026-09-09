@@ -1,4 +1,4 @@
-const CACHE_NAME = "savings-lab-v2";
+const CACHE_NAME = "savings-lab-v3";
 const APP_SHELL = [
   "./", "./index.html", "./index-flip-cards.html", "./manifest.webmanifest",
   "./icon.svg", "./icon-192.svg", "./icon-512.svg", "./pwa.js", "./autodebit-tracker.html", "./bank-fees-tracker.html",
@@ -30,6 +30,19 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  const isDocument = event.request.mode === "navigate" || event.request.destination === "document";
+
+  if (isDocument) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match("./index-flip-cards.html")))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
       const copy = response.clone();
