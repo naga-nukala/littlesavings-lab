@@ -1,4 +1,4 @@
-const CACHE_NAME = "savings-lab-v1";
+const CACHE_NAME = "savings-lab-v2";
 const APP_SHELL = [
   "./", "./index.html", "./index-flip-cards.html", "./manifest.webmanifest",
   "./icon.svg", "./icon-192.svg", "./icon-512.svg", "./pwa.js", "./autodebit-tracker.html", "./bank-fees-tracker.html",
@@ -11,7 +11,9 @@ const APP_SHELL = [
   "./mobile-cost-calculator.html", "./money-framework-dashboard.html", "./net-worth-tracker.html",
   "./ott-rotation-tracker.html", "./perday-cost-calculator.html", "./price-comparator.html",
   "./rent-vs-buy-calculator.html", "./sim-tracker.html", "./tax-regime-comparator.html",
-  "./travel-mode-comparator.html", "./vehicle-cost-calculator.html", "./yield-stack.html"
+  "./travel-mode-comparator.html", "./vehicle-cost-calculator.html", "./yield-stack.html",
+  "./children-corpus-planner.html", "./retirement-corpus-calculator.html",
+  "./gold-sgb-vs-jewelry-comparator.html", "./salary-ctc-optimizer.html", "./fuel-cost-per-km.html"
 ];
 
 self.addEventListener("install", event => {
