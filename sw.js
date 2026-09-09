@@ -1,7 +1,7 @@
 const CACHE_NAME = "savings-lab-v1";
 const APP_SHELL = [
   "./", "./index.html", "./index-flip-cards.html", "./manifest.webmanifest",
-  "./icon.svg", "./pwa.js", "./autodebit-tracker.html", "./bank-fees-tracker.html",
+  "./icon.svg", "./icon-192.svg", "./icon-512.svg", "./pwa.js", "./autodebit-tracker.html", "./bank-fees-tracker.html",
   "./casa-rupay-calculator.html", "./cc-cashback-calculator.html", "./debt-dashboard.html",
   "./dmart-checklist.html", "./emergency-fund-calculator.html", "./financial-life-plan.html",
   "./flat-scorecard.html", "./gift-card-calculator.html", "./house-expenses-cashback-tracker.html",
