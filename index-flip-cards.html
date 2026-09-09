@@ -130,7 +130,7 @@ h1 em { color: var(--coral); font-style: normal; }
     </div>
   </section>
   <section aria-labelledby="tools-title">
-    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">28 tools / tap a card to flip it</p></div>
+    <div class="section-head"><h2 id="tools-title">The full toolkit</h2><p id="tool-count">33 tools / tap a card to flip it</p></div>
     <div class="tool-controls"><input class="search" id="search" type="search" placeholder="Search tools" aria-label="Search tools"><button class="favorites-only" id="favorites-only" type="button">Show favorites</button></div>
     <div class="filters" id="filters" role="toolbar" aria-label="Filter tools"></div>
     <div class="card-grid" id="card-grid"></div>
@@ -151,10 +151,12 @@ const tools = [
   { name: "Auto-Debit Tracker", file: "autodebit-tracker.html", icon: "🔁", category: "Monthly bills", description: "Track recurring payments and due dates." },
   { name: "House Expenses Cashback Tracker", file: "house-expenses-cashback-tracker.html", icon: "🏠", category: "Monthly bills", description: "Track household bills and cashback by card." },
   { name: "Per-Day Cost Calculator", file: "perday-cost-calculator.html", icon: "📆", category: "Monthly bills", description: "Convert daily recurring spends into one clear figure." },
+  { name: "Fuel Cost per KM", file: "fuel-cost-per-km.html", icon: "⛽", category: "Monthly bills", description: "Calculate the running cost of each journey." },
   { name: "Bank Fees & Card Tracker", file: "bank-fees-tracker.html", icon: "🏦", category: "Banking & cards", description: "Decide which cards to keep or close." },
   { name: "Credit Card Cashback Calculator", file: "cc-cashback-calculator.html", icon: "💸", category: "Banking & cards", description: "Compare online, offline, and utility cashback." },
   { name: "CASA vs Rupay CC Savings", file: "casa-rupay-calculator.html", icon: "💳", category: "Banking & cards", description: "Work out float interest and rewards." },
   { name: "Gift Card Savings Calculator", file: "gift-card-calculator.html", icon: "🎁", category: "Banking & cards", description: "Compare discount offers before you buy." },
+  { name: "Gold: SGB vs Jewelry Comparator", file: "gold-sgb-vs-jewelry-comparator.html", icon: "🪙", category: "Banking & cards", description: "Compare investment gold with jewelry." },
   { name: "Price Comparator", file: "price-comparator.html", icon: "🛒", category: "Shopping & health", description: "Compare any item by its per-unit price." },
   { name: "DMart Shopping Checklist", file: "dmart-checklist.html", icon: "🧺", category: "Shopping & health", description: "Track your basket and saving reminders." },
   { name: "Medicine & Lab Test Comparator", file: "medicine-lab-comparator.html", icon: "💊", category: "Shopping & health", description: "Compare MRP with platform prices." },
@@ -166,7 +168,10 @@ const tools = [
   { name: "Debt Dashboard", file: "debt-dashboard.html", icon: "💳", category: "Planning", description: "Track every loan, EMI, and payoff timeline." },
   { name: "Financial Life Plan", file: "financial-life-plan.html", icon: "🧭", category: "Planning", description: "Map life-stage goals and protection gaps." },
   { name: "Net Worth Tracker", file: "net-worth-tracker.html", icon: "💼", category: "Planning", description: "Keep assets, liabilities, and net worth in view." },
-  { name: "Tax Regime Comparator", file: "tax-regime-comparator.html", icon: "📉", category: "Planning", description: "Compare old and new tax regimes before filing." }
+  { name: "Tax Regime Comparator", file: "tax-regime-comparator.html", icon: "📉", category: "Planning", description: "Compare old and new tax regimes before filing." },
+  { name: "Children Corpus Planner", file: "children-corpus-planner.html", icon: "🎓", category: "Planning", description: "Plan education and milestone funding." },
+  { name: "Retirement Corpus Calculator", file: "retirement-corpus-calculator.html", icon: "🌅", category: "Planning", description: "Estimate the corpus needed for retirement." },
+  { name: "Salary/CTC Structure Optimizer", file: "salary-ctc-optimizer.html", icon: "💼", category: "Planning", description: "Compare salary structures and take-home pay." }
 ];
 const featured = [tools[17], tools[15], tools[8], tools[12]];
 let activeCategory = "All tools";
