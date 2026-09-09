@@ -1,0 +1,16 @@
+{
+  "name": "Little Savings Lab",
+  "short_name": "Savings Lab",
+  "description": "Practical calculators and trackers for everyday money decisions.",
+  "start_url": "./index-flip-cards.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10181b",
+  "theme_color": "#a7e8c5",
+  "icons": [{
+    "src": "./icon.svg",
+    "sizes": "any",
+    "type": "image/svg+xml",
+    "purpose": "any maskable"
+  }]
+}
