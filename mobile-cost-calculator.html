@@ -54,12 +54,14 @@
   .history-member{padding:6px 0;border-top:1px solid rgba(71,85,105,.5);}
   .history-member strong{color:var(--txt);}
   .history-empty{margin:0;}
+  .industry-note{font-size:11px;color:var(--sub);line-height:1.5;margin:-8px 2px 12px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>📱 Mobile Cost & RC Calculator</h1>
   <p class="sub">Per-day cost = (Device + Accessories + Wear & Tear) ÷ Lifespan(days) + RC/day, per member.</p>
+  <p class="industry-note">Repair rule: if one repair costs more than 30% of the phone's current market value, replacement may be more economical. In India, studies suggest about 63% of users spend ₹2,001–₹10,000 on out-of-warranty repairs over a typical 2–4 year smartphone life.</p>
 
   <div class="card total-card">
     <div class="total-num" id="totalPerDay">₹0</div>
@@ -84,16 +86,29 @@
 const STORAGE_KEY = 'mobile-cost-calculator-members';
 const HISTORY_KEY = 'mobile-cost-calculator-history';
 const defaultMembers = [
-  {name:'Myself', device:0, accessories:0, years:2, rc:0, type:'smart'},
-  {name:'Spouse', device:0, accessories:0, years:2, rc:0, type:'smart'},
+  {name:'Myself', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'},
+  {name:'Spouse', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'},
 ];
 let members = loadMembers();
 let history = loadHistory();
 
+function normalizeMember(member){
+  return {
+    name:member.name||'',
+    device:Number(member.device)||0,
+    accessories:Number(member.accessories)||0,
+    wearTear:Number(member.wearTear)||0,
+    years:Number(member.years)||2,
+    rc:Number(member.rc)||0,
+    rcDays:Number(member.rcDays)||30,
+    type:member.type||'smart'
+  };
+}
+
 function loadMembers(){
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(saved) && saved.length ? saved : defaultMembers.map(m=>({...m}));
+    return Array.isArray(saved) && saved.length ? saved.map(normalizeMember) : defaultMembers.map(m=>({...m}));
   } catch(error) {
     return defaultMembers.map(m=>({...m}));
   }
@@ -113,7 +128,7 @@ function persist(){
 }
 
 function addMember(){
-  members.push({name:'', device:0, accessories:0, years:2, rc:0, type:'smart'});
+  members.push({name:'', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'});
   persist();
   render();
 }
@@ -129,10 +144,10 @@ function updateField(i, field, val){
 }
 
 const BENCHMARKS = {
-  smart:   { device: 12, accessories: 1.1, rc: 5 },
-  jio:     { device: 3,  accessories: 1, rc: 2 },
-  feature: { device: 1.5,accessories: 0.5, rc: 1 }
-}; // typical fair per-day cost (₹) by component
+  smart:   { device: 12, accessories: 1.1, wearTear: 2, rc: 5 },
+  jio:     { device: 3,  accessories: 1,   wearTear: 0.3, rc: 2 },
+  feature: { device: 1.5,accessories: 0.5, wearTear: 0.2, rc: 1 }
+}; // rough daily reference values (₹), including a repair/battery allowance for Wear & Tear
 
 function benchmarkFor(m){ return BENCHMARKS[m.type] || BENCHMARKS.smart; }
 
@@ -141,18 +156,19 @@ function costParts(m){
   return {
     device: (m.device||0) / days,
     accessories: (m.accessories||0) / days,
-    rc: (m.rc||0) / 30
+    wearTear: (m.wearTear||0) / days,
+    rc: (m.rc||0) / Math.max(1,m.rcDays||30)
   };
 }
 
 function perDayCost(m){
   const days = (m.years||1)*365;
-  const device = (m.device + m.accessories) / days;
-  return device + (m.rc||0)/30;
+  const ownership = (m.device||0) + (m.accessories||0) + (m.wearTear||0);
+  return ownership / days + (m.rc||0)/Math.max(1,m.rcDays||30);
 }
 
 function hasCosts(m){
-  return (m.device||0)>0 || (m.accessories||0)>0 || (m.rc||0)>0;
+  return (m.device||0)>0 || (m.accessories||0)>0 || (m.wearTear||0)>0 || (m.rc||0)>0;
 }
 
 function saveSnapshot(){
@@ -166,8 +182,10 @@ function saveSnapshot(){
       name:m.name||'(unnamed)',
       device:m.device||0,
       accessories:m.accessories||0,
+      wearTear:m.wearTear||0,
       years:m.years||1,
       rc:m.rc||0,
+      rcDays:m.rcDays||30,
       type:m.type||'smart',
       perDay:perDayCost(m),
       monthly:perDayCost(m)*30,
@@ -202,8 +220,12 @@ function render(){
         <div class="field"><label>Accessories (₹)</label><input type="number" value="${m.accessories}" oninput="updateField(${i},'accessories',this.value)"><div class="field-hint">Cover, screen guard, charger, earphones</div></div>
       </div>
       <div class="row">
-        <div class="field"><label>Lifespan (years)</label><input type="number" step="0.5" value="${m.years}" oninput="updateField(${i},'years',this.value)"></div>
-        <div class="field"><label>Monthly RC (₹)</label><input type="number" value="${m.rc}" oninput="updateField(${i},'rc',this.value)"></div>
+        <div class="field"><label>Wear &amp; Tear (₹)</label><input type="number" value="${m.wearTear}" oninput="updateField(${i},'wearTear',this.value)"><div class="field-hint">Repairs, battery, damage, servicing</div></div>
+        <div class="field"><label>Lifespan (years)</label><input type="number" step="0.5" value="${m.years}" oninput="updateField(${i},'years',this.value)"><div class="field-hint">Expected ownership period</div></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Recharge Amount (₹)</label><input type="number" value="${m.rc}" oninput="updateField(${i},'rc',this.value)"></div>
+        <div class="field"><label>Recharge Validity (days)</label><input type="number" min="1" value="${m.rcDays}" oninput="updateField(${i},'rcDays',this.value)"><div class="field-hint">For example: 28, 56, 84, or 365</div></div>
       </div>
       <div class="row">
         <div class="field"><label>Phone Type</label>
@@ -248,6 +270,7 @@ function updateTotals(){
         const rows = [
           {label:'Device', val:parts.device, bench:bench.device},
           {label:'Accessories', val:parts.accessories, bench:bench.accessories},
+          {label:'Wear & Tear', val:parts.wearTear, bench:bench.wearTear},
           {label:'RC', val:parts.rc, bench:bench.rc}
         ];
         // overall badge = worst offender
@@ -308,7 +331,8 @@ function renderHistory(){
     const details = savedMembers.length ? savedMembers.map(member=>`
       <div class="history-member">
         <strong>${escapeHtml(member.name)}</strong> · ₹${Number(member.perDay||0).toFixed(2)}/day · ₹${Number(member.monthly||0).toFixed(0)}/month<br>
-        Device ₹${Number(member.device||0).toFixed(0)} · Accessories ₹${Number(member.accessories||0).toFixed(0)} · Lifespan ${Number(member.years||0)} years · Recharge ₹${Number(member.rc||0).toFixed(0)}/month · ${escapeHtml(member.type||'smart')}
+        Device ₹${Number(member.device||0).toFixed(0)} · Accessories ₹${Number(member.accessories||0).toFixed(0)} · Wear &amp; Tear ₹${Number(member.wearTear||0).toFixed(0)} · Lifespan ${Number(member.years||0)} years<br>
+        Recharge ₹${Number(member.rc||0).toFixed(0)} for ${Number(member.rcDays||30)} days · ${escapeHtml(member.type||'smart')}
       </div>`).join('') : '<div class="history-member">This older snapshot has no saved member details.</div>';
     return `<details class="history-row"><summary class="history-summary"><span>${date} · ${memberCount} member${memberCount===1?'':'s'} · ₹${Number(snapshot.monthly||0).toFixed(0)}/month</span></summary><div class="history-details"><div>Household: ₹${Number(snapshot.totalPerDay||0).toFixed(2)}/day · ₹${Number(snapshot.annual||0).toFixed(0)}/year</div>${details}</div></details>`;
   }).join('');
