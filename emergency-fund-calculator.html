@@ -38,9 +38,12 @@
   .saved-heading{display:flex;justify-content:space-between;align-items:center;color:var(--sub);font-size:12px;margin-bottom:8px;}
   .saved-heading button{flex:0 0 auto;padding:4px 8px;font-size:11px;}
   .saved-empty{color:var(--sub);font-size:12px;text-align:center;padding:10px 0;}
-  .saved-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #334155;font-size:12px;}
-  .saved-item strong{display:block;font-size:13px;}
-  .saved-item span{color:var(--sub);}
+  .saved-item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px solid #334155;font-size:12px;}
+  .saved-item strong{display:block;font-size:13px;margin-bottom:5px;}
+  .saved-details{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;color:var(--sub);line-height:1.4;}
+  .saved-details b{color:var(--txt);font-weight:600;}
+  .saved-date{display:block;color:var(--sub);font-size:11px;margin-top:5px;}
+  .saved-item-actions{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
   .saved-item button{flex:0 0 auto;padding:5px 8px;font-size:11px;}
   @media(max-width:380px){.actions{flex-direction:column;}}
 </style>
@@ -180,6 +183,16 @@ function deleteReference(id){
   renderReferences();
 }
 
+function restoreReference(id){
+  const reference = readStorage(REFERENCES_KEY, []).find(item => item.id === id);
+  if(!reference) return;
+  FIELD_IDS.forEach(fieldId => {
+    document.getElementById(fieldId).value = reference[fieldId];
+  });
+  calc();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 function clearReferences(){
   if(!readStorage(REFERENCES_KEY, []).length) return;
   if(confirm('Clear all saved references?')){
@@ -202,8 +215,11 @@ function renderReferences(){
   if(!references.length){ container.innerHTML = '<div class="saved-empty">No saved references yet.</div>'; return; }
   container.innerHTML = references.map(reference => {
     const target = reference.monthlyExp * reference.months;
+    const gap = Math.max(0, target - reference.current);
+    const pct = target > 0 ? Math.min(100, (reference.current / target) * 100) : 0;
+    const monthsToGoal = reference.monthlyContrib > 0 ? Math.ceil(gap / reference.monthlyContrib) : null;
     const date = new Date(reference.savedAt).toLocaleDateString('en-IN');
-    return `<div class="saved-item"><div><strong>${formatCurrency(target)} target</strong><span>${formatCurrency(reference.monthlyExp)}/mo × ${reference.months} months · ${date}</span></div><button type="button" onclick="deleteReference('${reference.id}')" aria-label="Delete saved reference">Delete</button></div>`;
+    return `<div class="saved-item"><div><strong>${formatCurrency(target)} target · ${pct.toFixed(0)}% covered</strong><div class="saved-details"><span>Expenses: <b>${formatCurrency(reference.monthlyExp)}/mo</b></span><span>Buffer: <b>${reference.months} months</b></span><span>Current: <b>${formatCurrency(reference.current)}</b></span><span>Covered: <b>${pct.toFixed(0)}%</b></span><span>Monthly saving: <b>${formatCurrency(reference.monthlyContrib)}</b></span><span>Shortfall: <b>${formatCurrency(gap)}</b></span><span>Time to goal: <b>${monthsToGoal === null ? '--' : monthsToGoal + ' mo'}</b></span></div><span class="saved-date">Saved ${date}</span></div><div class="saved-item-actions"><button type="button" onclick="restoreReference('${reference.id}')">Restore</button><button type="button" onclick="deleteReference('${reference.id}')" aria-label="Delete saved reference">Delete</button></div></div>`;
   }).join('');
 }
 
