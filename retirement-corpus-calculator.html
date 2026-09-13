@@ -39,9 +39,22 @@
   .warn{background:#2e1a1a; border:1px solid #5a2d2d; color:var(--danger); border-radius:8px; padding:10px 12px; font-size:12px; margin-bottom:14px;}
   .empty{color:var(--muted); text-align:center; padding:20px; font-size:13px;}
   .note{color:var(--muted); font-size:11px; text-align:center; margin-top:10px; line-height:1.5;}
+  .btn{width:100%; padding:12px; border-radius:8px; border:none; font-size:14px; font-weight:600; cursor:pointer; margin-top:4px;
+    background:var(--accent2); color:#08170e;}
+  .saved-item{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; font-size:12px;}
+  .saved-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:4px;}
+  .saved-name{font-weight:700; font-size:13px; color:var(--text);}
+  .saved-meta{color:var(--muted);}
+  .icon-btn{background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:5px 9px; font-size:11px; cursor:pointer; flex-shrink:0;}
+  .icon-btn.del{color:var(--danger);}
+  .icon-btn.del.confirming{background:var(--danger); color:#fff; border-color:var(--danger);}
+  .toast{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#2a2f3a;
+    color:var(--text); padding:9px 16px; border-radius:20px; font-size:12px; border:1px solid var(--border);
+    box-shadow:0 4px 12px rgba(0,0,0,.4); z-index:100; white-space:nowrap; display:none;}
 </style>
 </head>
 <body>
+<div id="toast" class="toast"></div>
 
 <h1>🏖️ Retirement Corpus Calculator</h1>
 <div class="sub">What you'll need at retirement, adjusted for inflation, and the SIP gap to get there.</div>
@@ -74,12 +87,62 @@
 <div id="warnBox"></div>
 <div id="resultsBox"></div>
 
+<div class="form-card">
+  <div class="section-title">Save This Scenario</div>
+  <div class="row">
+    <div><input type="text" id="scenarioLabel" placeholder="e.g. Base case, 12% pre-return"></div>
+  </div>
+  <button class="btn" onclick="saveScenario()">💾 Save Scenario</button>
+</div>
+
+<div class="section-title">Saved Scenarios</div>
+<div id="scenarioList"></div>
+
 <div class="note">Assumes withdrawals at the start of each year in retirement and a constant real return post-retirement. Estimates only — actual returns and inflation will vary.</div>
 
 <script>
-function fmt(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+const FIELD_IDS = ['currentAge','retireAge','lifeExp','monthlyExp','inflation','preReturn','postReturn','currentSavings','existingSip'];
+const DRAFT_KEY = 'retirementCorpus_draft_v1';
+const SCENARIOS_KEY = 'retirementCorpus_scenarios_v1';
+
+function fmt(n){ return '₹' + Math.round(n||0).toLocaleString('en-IN'); }
+function fmtDate(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '';
+  const day = d.getDate();
+  const suf = (day%10===1&&day!==11)?'st':(day%10===2&&day!==12)?'nd':(day%10===3&&day!==13)?'rd':'th';
+  return `${day}${suf} ${d.toLocaleDateString('en-IN',{month:'short'})} ${d.getFullYear()}`;
+}
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.style.display='none';},2000);
+}
+let pendingDeletes={};
+function confirmDelete(key,btn,action){
+  if(pendingDeletes[key]){ clearTimeout(pendingDeletes[key]); delete pendingDeletes[key]; action(); return; }
+  if(btn){ btn.textContent='✔'; btn.classList.add('confirming'); }
+  showToast('Tap again to confirm delete');
+  pendingDeletes[key]=setTimeout(()=>{ delete pendingDeletes[key]; if(btn){btn.textContent='✕'; btn.classList.remove('confirming');} },2500);
+}
+
+function readForm(){
+  const v = {};
+  FIELD_IDS.forEach(id=>{ v[id] = document.getElementById(id).value; });
+  return v;
+}
+function applyForm(v){
+  FIELD_IDS.forEach(id=>{ if(Object.prototype.hasOwnProperty.call(v,id)) document.getElementById(id).value = v[id]; });
+}
+function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(readForm())); }catch(e){} }
+function loadDraft(){ try{ const d = JSON.parse(localStorage.getItem(DRAFT_KEY)); if(d) applyForm(d); }catch(e){} }
+
+let lastComputed = null;
 
 function calc(){
+  saveDraft();
   const currentAge = parseFloat(document.getElementById('currentAge').value);
   const retireAge = parseFloat(document.getElementById('retireAge').value);
   const lifeExp = parseFloat(document.getElementById('lifeExp').value);
@@ -100,6 +163,7 @@ function calc(){
   if(!valid){
     warnBox.innerHTML = '';
     resultsBox.innerHTML = '<div class="empty">Fill in your age, retirement age, life expectancy, and monthly expenses to see your target corpus.</div>';
+    lastComputed = null;
     return;
   }
   warnBox.innerHTML = '';
@@ -156,9 +220,84 @@ function calc(){
       <div class="bd-row hilite"><span>${onTrack ? 'Extra SIP Needed' : 'Additional Monthly SIP Needed'}</span><span class="bv">${onTrack ? "You're on track" : fmt(requiredSip)}</span></div>
     </div>
   `;
+
+  lastComputed = { corpusRequired, gap, requiredSip, onTrack };
 }
 
+function loadScenarios(){ try{ return JSON.parse(localStorage.getItem(SCENARIOS_KEY)) || []; }catch(e){ return []; } }
+function persistScenarios(list){ try{ localStorage.setItem(SCENARIOS_KEY, JSON.stringify(list)); }catch(e){} }
+
+function saveScenario(){
+  if(!lastComputed){ showToast('Fill valid inputs first'); return; }
+  const labelInput = document.getElementById('scenarioLabel');
+  const label = labelInput.value.trim() || 'Untitled scenario';
+  const scenarios = loadScenarios();
+  scenarios.unshift({
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    label,
+    savedAt: new Date().toISOString(),
+    fields: readForm(),
+    corpusRequired: lastComputed.corpusRequired,
+    gap: lastComputed.gap,
+    requiredSip: lastComputed.requiredSip,
+    onTrack: lastComputed.onTrack
+  });
+  persistScenarios(scenarios.slice(0,20));
+  labelInput.value = '';
+  renderScenarios();
+  showToast('Scenario saved');
+}
+
+function editScenario(id){
+  const s = loadScenarios().find(x=>x.id===id);
+  if(!s) return;
+  applyForm(s.fields);
+  calc();
+  showToast('Loaded — edit fields, then Save again to update');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function deleteScenario(id, btn){
+  confirmDelete('scn-'+id, btn, ()=>{
+    persistScenarios(loadScenarios().filter(x=>x.id!==id));
+    renderScenarios();
+    showToast('Scenario deleted');
+  });
+}
+
+function renderScenarios(){
+  const list = document.getElementById('scenarioList');
+  const scenarios = loadScenarios();
+  if(scenarios.length===0){
+    list.innerHTML = '<div class="empty">No saved scenarios yet.</div>';
+    return;
+  }
+  list.innerHTML = scenarios.map(s=>`
+    <div class="saved-item">
+      <div class="saved-top">
+        <div>
+          <div class="saved-name">${escapeHtml(s.label)}</div>
+          <div class="saved-meta">${fmtDate(s.savedAt)} · Corpus ${fmt(s.corpusRequired)}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="icon-btn" onclick="editScenario('${s.id}')">Edit</button>
+          <button class="icon-btn del" onclick="deleteScenario('${s.id}', this)">✕</button>
+        </div>
+      </div>
+      <div class="saved-meta">${s.onTrack ? 'On track' : 'Gap ' + fmt(s.gap) + ' · Extra SIP ' + fmt(s.requiredSip) + '/mo'}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(value){
+  const d = document.createElement('div');
+  d.textContent = value;
+  return d.innerHTML;
+}
+
+loadDraft();
 calc();
+renderScenarios();
 </script>
 </body>
 </html>
