@@ -63,7 +63,9 @@ h1 em { color: var(--coral); font-style: normal; }
 .spotlight-label { color: var(--yellow); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .spotlight h2 { max-width: 280px; margin: 0; font-family: "Space Grotesk", sans-serif; font-size: 35px; line-height: 1.05; letter-spacing: -.06em; }
 .spotlight p { max-width: 260px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.spotlight-icon { position: absolute; top: 70px; right: 38px; font-size: 72px; transform: rotate(9deg); filter: drop-shadow(0 15px 15px #0008); }
+.spotlight-cta { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; color: var(--night); text-decoration: none; background: var(--mint); border-radius: 8px; padding: 10px 14px; font-size: 12px; font-weight: 700; width: fit-content; position: relative; z-index: 2; }
+.spotlight-cta:hover { background: #c3f3d8; }
+.spotlight-icon { position: absolute; top: 70px; right: 38px; font-size: 72px; transform: rotate(9deg); filter: drop-shadow(0 15px 15px #0008); pointer-events: none; }
 .slider-controls { display: flex; align-items: center; gap: 12px; }
 .slider-controls button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: transparent; cursor: pointer; }
 .slider-controls button:hover { border-color: var(--mint); color: var(--mint); }
@@ -123,7 +125,7 @@ h1 em { color: var(--coral); font-style: normal; }
       <div class="spotlight">
         <div class="spotlight-icon" id="spotlight-icon" aria-hidden="true">📈</div>
         <div class="spotlight-content">
-          <div><div class="spotlight-label">Featured tool</div><h2 id="spotlight-title">Yield Stack</h2><p id="spotlight-description">Stack rates, taxes, and returns into one clear picture.</p></div>
+          <div><div class="spotlight-label">Featured tool</div><h2 id="spotlight-title">Yield Stack</h2><p id="spotlight-description">Stack rates, taxes, and returns into one clear picture.</p><a class="spotlight-cta" id="spotlight-cta" href="yield-stack.html">Open tool <span aria-hidden="true">↗</span></a></div>
           <div class="slider-controls"><button id="previous" type="button" aria-label="Previous featured tool">←</button><div class="dots" id="dots" aria-label="Featured tool slides"></div><button id="next" type="button" aria-label="Next featured tool">→</button></div>
         </div>
       </div>
@@ -224,6 +226,7 @@ function renderSlide() {
   document.getElementById("spotlight-icon").textContent = tool.icon;
   document.getElementById("spotlight-title").textContent = tool.name;
   document.getElementById("spotlight-description").textContent = tool.description;
+  document.getElementById("spotlight-cta").href = tool.file;
   document.getElementById("dots").innerHTML = featured.map((_, index) => `<button class="dot${index === slideIndex ? " active" : ""}" type="button" aria-label="Show slide ${index + 1}" data-slide="${index}"></button>`).join("");
   document.querySelectorAll(".dot").forEach(dot => dot.addEventListener("click", () => { slideIndex = Number(dot.dataset.slide); renderSlide(); }));
 }
