@@ -1,4 +1,4 @@
-const CACHE_NAME = "savings-lab-v3";
+const CACHE_NAME = "savings-lab-v4";
 const APP_SHELL = [
   "./", "./index.html", "./index-flip-cards.html", "./manifest.webmanifest",
   "./icon.svg", "./icon-192.svg", "./icon-512.svg", "./pwa.js", "./autodebit-tracker.html", "./bank-fees-tracker.html",

@@ -60,7 +60,7 @@
 <body>
 <div class="wrap">
   <h1>📱 Mobile Cost & RC Calculator</h1>
-  <p class="sub">Per-day cost = (Device + Accessories + Wear & Tear) ÷ Lifespan(days) + RC/day, per member.</p>
+  <p class="sub">Per-day cost = (Device + Accessories + Wear & Tear − Resale Value) ÷ Lifespan(days) + RC/day, per member.</p>
  
   <div class="card total-card">
     <div class="total-num" id="totalPerDay">₹0</div>
@@ -85,11 +85,13 @@
 const STORAGE_KEY = 'mobile-cost-calculator-members';
 const HISTORY_KEY = 'mobile-cost-calculator-history';
 const defaultMembers = [
-  {name:'Myself', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'},
-  {name:'Spouse', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'},
+  {name:'Myself', device:0, accessories:0, wearTear:0, resale:0, years:2, rc:0, rcDays:30, type:'smart'},
+  {name:'Spouse', device:0, accessories:0, wearTear:0, resale:0, years:2, rc:0, rcDays:30, type:'smart'},
 ];
 let members = loadMembers();
 let history = loadHistory();
+
+function inrFmt(n){ return '₹' + (Number(n)||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
 
 function normalizeMember(member){
   return {
@@ -97,6 +99,7 @@ function normalizeMember(member){
     device:Number(member.device)||0,
     accessories:Number(member.accessories)||0,
     wearTear:Number(member.wearTear)||0,
+    resale:Number(member.resale)||0,
     years:Number(member.years)||2,
     rc:Number(member.rc)||0,
     rcDays:Number(member.rcDays)||30,
@@ -127,7 +130,7 @@ function persist(){
 }
 
 function addMember(){
-  members.push({name:'', device:0, accessories:0, wearTear:0, years:2, rc:0, rcDays:30, type:'smart'});
+  members.push({name:'', device:0, accessories:0, wearTear:0, resale:0, years:2, rc:0, rcDays:30, type:'smart'});
   persist();
   render();
 }
@@ -150,24 +153,28 @@ const BENCHMARKS = {
 
 function benchmarkFor(m){ return BENCHMARKS[m.type] || BENCHMARKS.smart; }
 
+function netOwnershipCost(m){
+  return Math.max(0, (m.device||0) + (m.accessories||0) + (m.wearTear||0) - (m.resale||0));
+}
+
 function costParts(m){
   const days = (m.years||1)*365;
   return {
     device: (m.device||0) / days,
     accessories: (m.accessories||0) / days,
     wearTear: (m.wearTear||0) / days,
+    resale: -(m.resale||0) / days,
     rc: (m.rc||0) / Math.max(1,m.rcDays||30)
   };
 }
 
 function perDayCost(m){
   const days = (m.years||1)*365;
-  const ownership = (m.device||0) + (m.accessories||0) + (m.wearTear||0);
-  return ownership / days + (m.rc||0)/Math.max(1,m.rcDays||30);
+  return netOwnershipCost(m) / days + (m.rc||0)/Math.max(1,m.rcDays||30);
 }
 
 function hasCosts(m){
-  return (m.device||0)>0 || (m.accessories||0)>0 || (m.wearTear||0)>0 || (m.rc||0)>0;
+  return (m.device||0)>0 || (m.accessories||0)>0 || (m.wearTear||0)>0 || (m.resale||0)>0 || (m.rc||0)>0;
 }
 
 function saveSnapshot(){
@@ -182,6 +189,7 @@ function saveSnapshot(){
       device:m.device||0,
       accessories:m.accessories||0,
       wearTear:m.wearTear||0,
+      resale:m.resale||0,
       years:m.years||1,
       rc:m.rc||0,
       rcDays:m.rcDays||30,
@@ -220,13 +228,14 @@ function render(){
       </div>
       <div class="row">
         <div class="field"><label>Wear &amp; Tear (₹)</label><input type="number" value="${m.wearTear}" oninput="updateField(${i},'wearTear',this.value)"><div class="field-hint">Repairs, battery, damage, servicing</div></div>
+        <div class="field"><label>Resale Value (₹)</label><input type="number" value="${m.resale}" oninput="updateField(${i},'resale',this.value)"><div class="field-hint">Expected trade-in/resale at end of lifespan</div></div>
+      </div>
+      <div class="row">
         <div class="field"><label>Lifespan (years)</label><input type="number" step="0.5" value="${m.years}" oninput="updateField(${i},'years',this.value)"><div class="field-hint">Expected ownership period</div></div>
-      </div>
-      <div class="row">
         <div class="field"><label>Recharge Amount (₹)</label><input type="number" value="${m.rc}" oninput="updateField(${i},'rc',this.value)"></div>
-        <div class="field"><label>Recharge Validity (days)</label><input type="number" min="1" value="${m.rcDays}" oninput="updateField(${i},'rcDays',this.value)"><div class="field-hint">For example: 28, 56, 84, or 365</div></div>
       </div>
       <div class="row">
+        <div class="field"><label>Recharge Validity (days)</label><input type="number" min="1" value="${m.rcDays}" oninput="updateField(${i},'rcDays',this.value)"><div class="field-hint">For example: 28, 56, 84, or 365</div></div>
         <div class="field"><label>Phone Type</label>
           <select onchange="updateField(${i},'type',this.value)">
             <option value="smart" ${m.type==='smart'?'selected':''}>Smartphone</option>
@@ -236,7 +245,7 @@ function render(){
         </div>
       </div>
       <div class="row" style="justify-content:space-between;align-items:baseline;">
-        <div class="per-day" data-role="perday">₹${perDayCost(m).toFixed(2)} / day</div>
+        <div class="per-day" data-role="perday">${inrFmt2(perDayCost(m))} / day</div>
         <div class="badge-cost" data-role="badge"></div>
       </div>
       <div class="benchmark-note" data-role="note"></div>
@@ -246,6 +255,8 @@ function render(){
   updateTotals();
 }
 
+function inrFmt2(n){ return '₹' + (Number(n)||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
 function updateTotals(){
   // update each member's per-day text in place, no rebuild
   const container = document.getElementById('membersContainer');
@@ -253,7 +264,7 @@ function updateTotals(){
     const div = container.querySelector(`[data-index="${i}"]`);
     if(div){
       const pd = div.querySelector('[data-role="perday"]');
-      if(pd) pd.textContent = `₹${perDayCost(m).toFixed(2)} / day`;
+      if(pd) pd.textContent = `${inrFmt2(perDayCost(m))} / day`;
 
       const parts = costParts(m);
       const bench = benchmarkFor(m);
@@ -272,7 +283,7 @@ function updateTotals(){
           {label:'Wear & Tear', val:parts.wearTear, bench:bench.wearTear},
           {label:'RC', val:parts.rc, bench:bench.rc}
         ];
-        // overall badge = worst offender
+        // overall badge = worst offender (resale only reduces cost, not scored against benchmark)
         let worst = {diffPct:-100};
         rows.forEach(r=>{
           const diffPct = r.bench>0 ? ((r.val-r.bench)/r.bench)*100 : 0;
@@ -284,21 +295,25 @@ function updateTotals(){
         else if(worst.diffPct <= 50){ badge.classList.add('mid'); badge.textContent='A bit high'; }
         else { badge.classList.add('bad'); badge.textContent='Overpaying'; }
 
-        note.innerHTML = rows.map(r=>{
+        let noteHtml = rows.map(r=>{
           const tag = r.diffPct<=10 ? '✅' : r.diffPct<=50 ? '⚠️' : '🔴';
-          const cmp = r.diffPct>0 ? `+${r.diffPct.toFixed(0)}% vs ₹${r.bench}/day typical` : `within typical (₹${r.bench}/day)`;
-          return `<div>${tag} ${r.label}: ₹${r.val.toFixed(2)}/day — ${cmp}</div>`;
+          const cmp = r.diffPct>0 ? `+${r.diffPct.toFixed(0)}% vs ${inrFmt2(r.bench)}/day typical` : `within typical (${inrFmt2(r.bench)}/day)`;
+          return `<div>${tag} ${r.label}: ${inrFmt2(r.val)}/day — ${cmp}</div>`;
         }).join('');
+        if(m.resale>0){
+          noteHtml += `<div>💰 Resale credit: −${inrFmt2(-parts.resale)}/day recovered</div>`;
+        }
+        note.innerHTML = noteHtml;
       }
     }
   });
 
   const total = members.reduce((s,m)=>s+perDayCost(m),0);
-  document.getElementById('totalPerDay').textContent = '₹'+total.toFixed(2);
+  document.getElementById('totalPerDay').textContent = inrFmt2(total);
 
   const bd = document.getElementById('breakdown');
-  bd.innerHTML = members.map(m=>`<div><span>${escapeHtml(m.name||'(unnamed)')}</span><span>₹${perDayCost(m).toFixed(2)}/day</span></div>`).join('')
-    + `<div style="border-top:1px solid #334155;margin-top:6px;padding-top:6px;"><span>Monthly Total</span><span>₹${(total*30).toFixed(0)}</span></div>`;
+  bd.innerHTML = members.map(m=>`<div><span>${escapeHtml(m.name||'(unnamed)')}</span><span>${inrFmt2(perDayCost(m))}/day</span></div>`).join('')
+    + `<div style="border-top:1px solid #334155;margin-top:6px;padding-top:6px;"><span>Monthly Total</span><span>${inrFmt(total*30)}</span></div>`;
   renderRecommendation();
 }
 
@@ -311,10 +326,10 @@ function renderRecommendation(){
     return sum + Math.max(0,parts.device-benchmark.device) + Math.max(0,parts.accessories-benchmark.accessories) + Math.max(0,parts.rc-benchmark.rc);
   },0)*30;
   if(savings<1){
-    recommendation.textContent = members.some(hasCosts) ? 'Your entered costs are within the typical range. Save a snapshot as a baseline.' : 'Enter device, accessory, or recharge costs to see possible savings.';
+    recommendation.textContent = members.some(hasCosts) ? 'Your entered costs are within the typical range. Save a snapshot as a baseline.' : 'Enter device, accessory, resale, or recharge costs to see possible savings.';
     return;
   }
-  recommendation.innerHTML = `<strong>Potential saving: ₹${savings.toFixed(0)}/month</strong><br>Review the items marked above typical. That is about ₹${(savings*12).toFixed(0)} per year.`;
+  recommendation.innerHTML = `<strong>Potential saving: ${inrFmt(savings)}/month</strong><br>Review the items marked above typical. That is about ${inrFmt(savings*12)} per year.`;
 }
 
 function renderHistory(){
@@ -324,17 +339,26 @@ function renderHistory(){
     return;
   }
   list.innerHTML = history.map(snapshot=>{
-    const date = new Date(snapshot.date).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+    const date = formatDDMMMYYYY(snapshot.date);
     const savedMembers = Array.isArray(snapshot.members) ? snapshot.members : [];
     const memberCount = Array.isArray(snapshot.members) ? savedMembers.length : snapshot.members;
     const details = savedMembers.length ? savedMembers.map(member=>`
       <div class="history-member">
-        <strong>${escapeHtml(member.name)}</strong> · ₹${Number(member.perDay||0).toFixed(2)}/day · ₹${Number(member.monthly||0).toFixed(0)}/month<br>
-        Device ₹${Number(member.device||0).toFixed(0)} · Accessories ₹${Number(member.accessories||0).toFixed(0)} · Wear &amp; Tear ₹${Number(member.wearTear||0).toFixed(0)} · Lifespan ${Number(member.years||0)} years<br>
-        Recharge ₹${Number(member.rc||0).toFixed(0)} for ${Number(member.rcDays||30)} days · ${escapeHtml(member.type||'smart')}
+        <strong>${escapeHtml(member.name)}</strong> · ${inrFmt2(member.perDay||0)}/day · ${inrFmt(member.monthly||0)}/month<br>
+        Device ${inrFmt(member.device||0)} · Accessories ${inrFmt(member.accessories||0)} · Wear &amp; Tear ${inrFmt(member.wearTear||0)} · Resale −${inrFmt(member.resale||0)} · Lifespan ${Number(member.years||0)} years<br>
+        Recharge ${inrFmt(member.rc||0)} for ${Number(member.rcDays||30)} days · ${escapeHtml(member.type||'smart')}
       </div>`).join('') : '<div class="history-member">This older snapshot has no saved member details.</div>';
-    return `<details class="history-row"><summary class="history-summary"><span>${date} · ${memberCount} member${memberCount===1?'':'s'} · ₹${Number(snapshot.monthly||0).toFixed(0)}/month</span></summary><div class="history-details"><div>Household: ₹${Number(snapshot.totalPerDay||0).toFixed(2)}/day · ₹${Number(snapshot.annual||0).toFixed(0)}/year</div>${details}</div></details>`;
+    return `<details class="history-row"><summary class="history-summary"><span>${date} · ${memberCount} member${memberCount===1?'':'s'} · ${inrFmt(snapshot.monthly||0)}/month</span></summary><div class="history-details"><div>Household: ${inrFmt2(snapshot.totalPerDay||0)}/day · ${inrFmt(snapshot.annual||0)}/year</div>${details}</div></details>`;
   }).join('');
+}
+
+function formatDDMMMYYYY(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '';
+  const day = d.getDate();
+  const suffix = (day%10===1 && day!==11) ? 'st' : (day%10===2 && day!==12) ? 'nd' : (day%10===3 && day!==13) ? 'rd' : 'th';
+  const month = d.toLocaleDateString('en-IN',{month:'short'});
+  return `${day}${suffix} ${month} ${d.getFullYear()}`;
 }
 
 function escapeHtml(value){
