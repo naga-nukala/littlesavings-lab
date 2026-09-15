@@ -110,6 +110,19 @@ function calc(){
   else if(net >= 0){ verdict.textContent = '⚠️ Marginal — check if effort is worth it for this amount.'; }
   else { verdict.textContent = '🔴 Losing money — redemption fee outweighs the benefit.'; }
 }
+
+(function(){
+  const K='as_casarupay';
+  try{
+    const d=JSON.parse(localStorage.getItem(K)||'{}');
+    Object.keys(d).forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id];});
+  }catch(e){}
+  document.addEventListener('input',()=>{
+    const d={};
+    document.querySelectorAll('input[id],select[id]').forEach(el=>{d[el.id]=el.value;});
+    try{localStorage.setItem(K,JSON.stringify(d));}catch(e){}
+  });
+})();
 calc();
 </script>
 </body>

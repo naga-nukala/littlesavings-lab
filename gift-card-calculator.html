@@ -64,15 +64,24 @@
 </div>
 
 <script>
-let offers = [
-  {source:'Amazon Pay', discount:5},
-  {source:'CRED', discount:3}
-];
+const STORAGE_KEY = 'gift_card_state_v1';
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function loadState(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && Array.isArray(saved.offers)) return saved;
+  }catch(e){}
+  return { purchaseAmt:'', offers:[{source:'Amazon Pay', discount:5},{source:'CRED', discount:3}] };
+}
+const state = loadState();
+let offers = state.offers;
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({purchaseAmt: document.getElementById('purchaseAmt').value, offers})); }
 
-function addOffer(){ offers.push({source:'', discount:0}); renderOffers(); }
-function removeOffer(i){ offers.splice(i,1); renderOffers(); }
+function addOffer(){ offers.push({source:'', discount:0}); save(); renderOffers(); }
+function removeOffer(i){ offers.splice(i,1); save(); renderOffers(); }
 function updateOffer(i, field, val){
   offers[i][field] = field==='source' ? val : (parseFloat(val)||0);
+  save();
   calc();
 }
 
@@ -89,6 +98,7 @@ function renderOffers(){
 }
 
 function calc(){
+  save();
   const amt = parseFloat(document.getElementById('purchaseAmt').value) || 0;
   const valid = offers.filter(o=>o.source);
 
@@ -98,7 +108,7 @@ function calc(){
     if(!best || saving > best.saving) best = {...o, saving};
   });
 
-  document.getElementById('bestSaving').textContent = '₹' + (best ? best.saving.toFixed(0) : '0');
+  document.getElementById('bestSaving').textContent = inr(best ? best.saving : 0);
   document.getElementById('bestLabel').textContent = best ? `Best: ${best.source} (${best.discount}% off)` : 'Best Offer Savings';
 
   const list = document.getElementById('comparisonList');
@@ -107,11 +117,12 @@ function calc(){
     const isBest = best && o.source===best.source && o.discount===best.discount;
     return `<div class="offer-line">
       <span>${o.source} — ${o.discount}%${isBest?'<span class="best-tag">BEST</span>':''}</span>
-      <span class="save-amt">₹${saving.toFixed(0)}</span>
+      <span class="save-amt">${inr(saving)}</span>
     </div>`;
   }).join('');
 }
 
+document.getElementById('purchaseAmt').value = state.purchaseAmt || '';
 renderOffers();
 </script>
 </body>

@@ -33,21 +33,46 @@
   <p class="note">Reward rate means rewards earned per ₹100 of spend. For points or miles, enter the points/miles rate and their rupee redemption value. Annual fees are charged once per card used in the recommended wallet and considered when ranking each category.</p>
 </div>
 <script>
-const categories=[['online','Online'],['offline','Offline'],['utilities','Utilities'],['fuel','Fuel'],['travel','Travel']];
-let cards=[{id:1,name:'Card 1',fee:0,value:1,rates:{online:0,offline:0,utilities:0,fuel:0,travel:0},caps:{online:0,offline:0,utilities:0,fuel:0,travel:0}}];
-let nextId=2;
+const STORAGE_KEY = 'cc_category_optimizer_v1';
 function money(value){return '₹'+Math.round(value).toLocaleString('en-IN');}
 function escapeHtml(value){const el=document.createElement('div');el.textContent=value;return el.innerHTML;}
-function renderSpend(){document.getElementById('spendRows').innerHTML=categories.map(([key,label])=>`<div class="category"><div class="category-name">${label}</div><div><label>${label}</label><input type="number" min="0" value="0" data-spend="${key}" oninput="calculate()"></div><div></div><div></div><div></div></div>`).join('');}
+const categories=[['online','Online'],['offline','Offline'],['utilities','Utilities'],['fuel','Fuel'],['travel','Travel']];
+
+function defaultCards(){ return [{id:1,name:'Card 1',fee:0,value:1,rates:{online:0,offline:0,utilities:0,fuel:0,travel:0},caps:{online:0,offline:0,utilities:0,fuel:0,travel:0}}]; }
+function loadState(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && Array.isArray(saved.cards) && saved.cards.length) return saved;
+  }catch(e){}
+  return { spends:{online:0,offline:0,utilities:0,fuel:0,travel:0}, cards: defaultCards() };
+}
+const state = loadState();
+let cards = state.cards;
+let nextId = Math.max(1, ...cards.map(c=>c.id)) + 1;
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ spends: getSpends(true), cards }));
+}
+function getSpends(raw){
+  const spends={};
+  categories.forEach(([key])=>{
+    const el = document.querySelector(`[data-spend="${key}"]`);
+    spends[key] = el ? (parseFloat(el.value)||0) : (state.spends?.[key]||0);
+  });
+  return raw ? spends : Object.fromEntries(Object.entries(spends).map(([k,v])=>[k,v*12]));
+}
+
+function renderSpend(){
+  document.getElementById('spendRows').innerHTML=categories.map(([key,label])=>`<div class="category"><div class="category-name">${label}</div><div><label>${label}</label><input type="number" min="0" value="${state.spends?.[key]||0}" data-spend="${key}" oninput="calculate()"></div><div></div><div></div><div></div></div>`).join('');
+}
 function cardTemplate(card){return `<div class="card" data-card-id="${card.id}"><div class="section-title">${escapeHtml(card.name)}<button class="remove" onclick="removeCard(${card.id})">Remove</button></div><div class="row"><div class="field"><label>Card name</label><input data-card="name" value="${escapeHtml(card.name)}" oninput="readCards()"></div><div class="field"><label>Annual fee (₹)</label><input type="number" min="0" data-card="fee" value="${card.fee}" oninput="readCards()"></div><div class="field"><label>Value per point/mile (₹)</label><input type="number" min="0" step="0.01" data-card="value" value="${card.value}" oninput="readCards()"></div></div><div class="category header"><div>Category</div><div>Reward rate</div><div>Cap ₹/mo</div><div></div><div></div></div>${categories.map(([key,label])=>`<div class="category"><div class="category-name">${label}</div><div><label>Rate per ₹100</label><input type="number" min="0" step="0.01" data-rate="${key}" value="${card.rates[key]}" oninput="readCards()"></div><div><label>Reward cap</label><input type="number" min="0" data-cap="${key}" value="${card.caps[key]}" oninput="readCards()"></div><div></div><div></div></div>`).join('')}<div class="hint">Set a reward cap to 0 for no cap. Use value 1 for cashback; for points, use the current redemption value.</div></div>`;}
 function renderCards(){document.getElementById('cards').innerHTML=cards.map(cardTemplate).join('');}
-function addCard(){if(cards.length>=6)return;cards.push({id:nextId,name:'Card '+nextId,fee:0,value:1,rates:{online:0,offline:0,utilities:0,fuel:0,travel:0},caps:{online:0,offline:0,utilities:0,fuel:0,travel:0}});nextId++;renderCards();calculate();}
-function removeCard(id){if(cards.length===1)return;cards=cards.filter(card=>card.id!==id);renderCards();calculate();}
-function readCards(){document.querySelectorAll('[data-card-id]').forEach(element=>{const id=Number(element.dataset.cardId);const card=cards.find(item=>item.id===id);if(!card)return;card.name=element.querySelector('[data-card="name"]').value||'Unnamed card';card.fee=parseFloat(element.querySelector('[data-card="fee"]').value)||0;card.value=parseFloat(element.querySelector('[data-card="value"]').value)||0;categories.forEach(([key])=>{card.rates[key]=parseFloat(element.querySelector(`[data-rate="${key}"]`).value)||0;card.caps[key]=parseFloat(element.querySelector(`[data-cap="${key}"]`).value)||0;});});calculate();}
-function getSpends(){const spends={};categories.forEach(([key])=>{spends[key]=(parseFloat(document.querySelector(`[data-spend="${key}"]`).value)||0)*12;});return spends;}
+function addCard(){if(cards.length>=6)return;cards.push({id:nextId,name:'Card '+nextId,fee:0,value:1,rates:{online:0,offline:0,utilities:0,fuel:0,travel:0},caps:{online:0,offline:0,utilities:0,fuel:0,travel:0}});nextId++;renderCards();save();calculate();}
+function removeCard(id){if(cards.length===1)return;cards=cards.filter(card=>card.id!==id);renderCards();save();calculate();}
+function readCards(){document.querySelectorAll('[data-card-id]').forEach(element=>{const id=Number(element.dataset.cardId);const card=cards.find(item=>item.id===id);if(!card)return;card.name=element.querySelector('[data-card="name"]').value||'Unnamed card';card.fee=parseFloat(element.querySelector('[data-card="fee"]').value)||0;card.value=parseFloat(element.querySelector('[data-card="value"]').value)||0;categories.forEach(([key])=>{card.rates[key]=parseFloat(element.querySelector(`[data-rate="${key}"]`).value)||0;card.caps[key]=parseFloat(element.querySelector(`[data-cap="${key}"]`).value)||0;});});save();calculate();}
 function reward(card,key,annualSpend){const uncapped=annualSpend*(card.rates[key]/100)*card.value;const annualCap=card.caps[key]*12;return annualCap>0?Math.min(uncapped,annualCap):uncapped;}
 function portfolioValue(assignment,spends){const used=new Set(Object.values(assignment));let gross=0;categories.forEach(([key])=>{gross+=reward(cards.find(card=>card.id===assignment[key]),key,spends[key]);});const fees=[...used].reduce((sum,id)=>sum+cards.find(card=>card.id===id).fee,0);return {gross,fees,net:gross-fees};}
-function calculate(){if(!document.querySelector('[data-spend="online"]'))return;readCardsOnly();const spends=getSpends();const assignment={};categories.forEach(([key])=>{let best=null;cards.forEach(card=>{const candidate={...assignment,[key]:card.id};categories.filter(([other])=>other!==key).forEach(([other])=>{if(!candidate[other])candidate[other]=cards.reduce((winner,current)=>reward(current,other,spends[other])>reward(winner,other,spends[other])?current:winner,cards[0]).id;});const value=portfolioValue(candidate,spends).net;if(!best||value>best.value)best={card,value};});assignment[key]=best.card.id;});const portfolio=portfolioValue(assignment,spends);renderResults(assignment,spends,portfolio);}
+function calculate(){if(!document.querySelector('[data-spend="online"]'))return;readCardsOnly();save();const spends=getSpends();const assignment={};categories.forEach(([key])=>{let best=null;cards.forEach(card=>{const candidate={...assignment,[key]:card.id};categories.filter(([other])=>other!==key).forEach(([other])=>{if(!candidate[other])candidate[other]=cards.reduce((winner,current)=>reward(current,other,spends[other])>reward(winner,other,spends[other])?current:winner,cards[0]).id;});const value=portfolioValue(candidate,spends).net;if(!best||value>best.value)best={card,value};});assignment[key]=best.card.id;});const portfolio=portfolioValue(assignment,spends);renderResults(assignment,spends,portfolio);}
 function readCardsOnly(){document.querySelectorAll('[data-card-id]').forEach(element=>{const id=Number(element.dataset.cardId);const card=cards.find(item=>item.id===id);if(!card)return;card.name=element.querySelector('[data-card="name"]').value||'Unnamed card';card.fee=parseFloat(element.querySelector('[data-card="fee"]').value)||0;card.value=parseFloat(element.querySelector('[data-card="value"]').value)||0;categories.forEach(([key])=>{card.rates[key]=parseFloat(element.querySelector(`[data-rate="${key}"]`).value)||0;card.caps[key]=parseFloat(element.querySelector(`[data-cap="${key}"]`).value)||0;});});}
 function renderResults(assignment,spends,portfolio){document.getElementById('summary').innerHTML=`<div class="summary"><div class="summary-box"><div class="summary-label">Gross annual rewards</div><div class="summary-value">${money(portfolio.gross)}</div></div><div class="summary-box"><div class="summary-label">Net annual value</div><div class="summary-value">${money(portfolio.net)}</div></div></div>`;document.getElementById('results').innerHTML=categories.map(([key,label])=>{const card=cards.find(item=>item.id===assignment[key]);const annualSpend=spends[key];const earned=reward(card,key,annualSpend);return `<div class="result best"><h3>${label}</h3><div class="winner">${escapeHtml(card.name)} <small>recommended</small></div><div class="result-row"><span>Annual spend</span><strong>${money(annualSpend)}</strong></div><div class="result-row"><span>Annual rewards</span><strong>${money(earned)}</strong></div><div class="result-row"><span>Reward rate</span><strong>${card.rates[key]}%</strong></div><div class="result-row total"><span>Portfolio net value</span><strong>${money(portfolio.net)}</strong></div></div>`;}).join('');}
 renderSpend();renderCards();calculate();

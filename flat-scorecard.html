@@ -150,6 +150,19 @@ function calcScore(){
   numEl.style.color = color;
   verdictEl.textContent = verdict;
 }
+
+(function(){
+  const K='as_flatscorecard';
+  try{
+    const d=JSON.parse(localStorage.getItem(K)||'{}');
+    Object.keys(d).forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id];});
+  }catch(e){}
+  document.addEventListener('input',()=>{
+    const d={};
+    document.querySelectorAll('input[id],select[id]').forEach(el=>{d[el.id]=el.value;});
+    try{localStorage.setItem(K,JSON.stringify(d));}catch(e){}
+  });
+})();
 </script>
 </body>
 </html>

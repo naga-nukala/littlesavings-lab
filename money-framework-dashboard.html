@@ -41,7 +41,6 @@
   .stat{flex:1;text-align:center;background:#0f172a;border-radius:10px;padding:12px;}
   .stat .n{font-size:18px;font-weight:700;}
   .stat .l{font-size:10px;color:var(--sub);margin-top:2px;}
-  .saved-note{font-size:10px;color:var(--sub);text-align:right;margin-top:6px;min-height:14px;}
 </style>
 </head>
 <body>
@@ -88,78 +87,58 @@
       <div class="field"><label>Monthly Savings (₹)</label><input type="number" id="savings" value="0" oninput="calc()"></div>
       <div class="field"><label>Monthly Investment (₹)</label><input type="number" id="invest" value="0" oninput="calc()"></div>
     </div>
-    <div class="saved-note" id="savedNote"></div>
   </div>
 </div>
 
 <script>
-const STORAGE_KEY = 'moneyFrameworkDashboard_v1';
+const STORAGE_KEY = 'money_framework_state_v1';
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
 
 function loadState(){
   try{
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if(s && typeof s === 'object'){
-      return {
-        inflow: s.inflow || '',
-        expenses: Array.isArray(s.expenses) && s.expenses.length ? s.expenses : [{name:'Rent', amount:0}, {name:'Food', amount:0}],
-        debts: Array.isArray(s.debts) && s.debts.length ? s.debts : [{name:'', amount:0, rate:0}],
-        savings: s.savings ?? 0,
-        invest: s.invest ?? 0
-      };
-    }
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && Array.isArray(saved.expenses) && Array.isArray(saved.debts)) return saved;
   }catch(e){}
   return {
-    inflow: '',
-    expenses: [{name:'Rent', amount:0}, {name:'Food', amount:0}],
-    debts: [{name:'', amount:0, rate:0}],
-    savings: 0,
-    invest: 0
+    inflow:'', savings:0, invest:0,
+    expenses:[{name:'Rent', amount:0}, {name:'Food', amount:0}],
+    debts:[{name:'', amount:0, rate:0}]
   };
 }
-
 const state = loadState();
 let expenses = state.expenses;
 let debts = state.debts;
 
-function fmtINR(n){ return '₹' + Math.round(n||0).toLocaleString('en-IN'); }
-
-function persist(){
-  const payload = {
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
     inflow: document.getElementById('inflow').value,
-    expenses,
-    debts,
     savings: document.getElementById('savings').value,
-    invest: document.getElementById('invest').value
-  };
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    const note = document.getElementById('savedNote');
-    note.textContent = 'Saved';
-    clearTimeout(persist._t);
-    persist._t = setTimeout(()=>{ note.textContent=''; }, 1200);
-  }catch(e){}
+    invest: document.getElementById('invest').value,
+    expenses, debts
+  }));
 }
 
-function addExpense(){ expenses.push({name:'', amount:0}); renderExpenses(); persist(); }
-function removeExpense(i){ expenses.splice(i,1); renderExpenses(); persist(); }
+function addExpense(){ expenses.push({name:'', amount:0}); save(); renderExpenses(); }
+function removeExpense(i){ expenses.splice(i,1); save(); renderExpenses(); }
 function updateExpense(i, field, val){
   expenses[i][field] = field==='name' ? val : (parseFloat(val)||0);
+  save();
   calc();
 }
 
-function addDebt(){ debts.push({name:'', amount:0, rate:0}); renderDebts(); persist(); }
-function removeDebt(i){ debts.splice(i,1); renderDebts(); persist(); }
+function addDebt(){ debts.push({name:'', amount:0, rate:0}); save(); renderDebts(); }
+function removeDebt(i){ debts.splice(i,1); save(); renderDebts(); }
 function updateDebt(i, field, val){
   debts[i][field] = field==='name' ? val : (parseFloat(val)||0);
+  save();
   updateDebtPriority();
-  persist();
 }
 
 function renderExpenses(){
   const c = document.getElementById('expensesList');
   c.innerHTML = expenses.map((e,i)=>`
     <div class="item">
-      <input placeholder="Category" value="${escapeHtml(e.name)}" oninput="updateExpense(${i},'name',this.value)">
+      <input placeholder="Category" value="${e.name}" oninput="updateExpense(${i},'name',this.value)">
       <input type="number" placeholder="₹" style="max-width:100px;" value="${e.amount}" oninput="updateExpense(${i},'amount',this.value)">
       <button class="remove" onclick="removeExpense(${i})">✕</button>
     </div>
@@ -171,7 +150,7 @@ function renderDebts(){
   const c = document.getElementById('debtsList');
   c.innerHTML = debts.map((d,i)=>`
     <div class="item">
-      <input placeholder="Debt name" value="${escapeHtml(d.name)}" oninput="updateDebt(${i},'name',this.value)">
+      <input placeholder="Debt name" value="${d.name}" oninput="updateDebt(${i},'name',this.value)">
       <input type="number" placeholder="Amount ₹" style="max-width:110px;" value="${d.amount}" oninput="updateDebt(${i},'amount',this.value)">
       <input type="number" placeholder="Rate %" style="max-width:80px;" value="${d.rate}" oninput="updateDebt(${i},'rate',this.value)">
       <button class="remove" onclick="removeDebt(${i})">✕</button>
@@ -189,7 +168,7 @@ function updateDebtPriority(){
 }
 
 function calc(){
-  persist();
+  save();
   const inflow = parseFloat(document.getElementById('inflow').value) || 0;
   const totalExp = expenses.reduce((s,e)=>s+e.amount,0);
   const savings = parseFloat(document.getElementById('savings').value) || 0;
@@ -197,7 +176,7 @@ function calc(){
 
   const net = inflow - totalExp - savings - invest;
   const netEl = document.getElementById('netFlow');
-  netEl.textContent = (net>=0?'+':'') + fmtINR(net);
+  netEl.textContent = (net>=0?'+':'') + inr(net);
   netEl.style.color = net >= 0 ? 'var(--acc)' : 'var(--bad)';
 
   const total = totalExp + savings + invest || 1;
@@ -209,14 +188,9 @@ function calc(){
   document.getElementById('investRate').textContent = inflow>0 ? ((invest/inflow)*100).toFixed(0)+'%' : '0%';
 }
 
-function escapeHtml(value){
-  return String(value).replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-}
-
-document.getElementById('inflow').value = state.inflow;
-document.getElementById('savings').value = state.savings;
-document.getElementById('invest').value = state.invest;
-
+document.getElementById('inflow').value = state.inflow || '';
+document.getElementById('savings').value = state.savings || 0;
+document.getElementById('invest').value = state.invest || 0;
 renderExpenses();
 renderDebts();
 calc();

@@ -120,6 +120,19 @@ function calc(){
   healthBar.style.background = healthPct>=100?'var(--acc)':healthPct>=50?'var(--warn)':'var(--bad)';
   document.getElementById('healthGap').textContent = healthGap>0 ? `Gap: ₹${healthGap.toLocaleString('en-IN')} (${healthPct.toFixed(0)}% covered)` : '✅ Fully covered';
 }
+
+(function(){
+  const K='as_insurancechecker';
+  try{
+    const d=JSON.parse(localStorage.getItem(K)||'{}');
+    Object.keys(d).forEach(id=>{const el=document.getElementById(id);if(el)el.value=d[id];});
+  }catch(e){}
+  document.addEventListener('input',()=>{
+    const d={};
+    document.querySelectorAll('input[id],select[id]').forEach(el=>{d[el.id]=el.value;});
+    try{localStorage.setItem(K,JSON.stringify(d));}catch(e){}
+  });
+})();
 calc();
 </script>
 </body>

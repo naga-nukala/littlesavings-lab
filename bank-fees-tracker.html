@@ -53,20 +53,31 @@
 </div>
 
 <script>
-let cards = [
-  {name:'', type:'CC', annualFee:0, monthlyFee:0, waiverSpend:0, actualSpend:0, rewardsValue:0}
-];
+const STORAGE_KEY = 'bank_fees_cards_v1';
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function loadCards(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(Array.isArray(saved) && saved.length) return saved;
+  }catch(e){}
+  return [{name:'', type:'CC', annualFee:0, monthlyFee:0, waiverSpend:0, actualSpend:0, rewardsValue:0}];
+}
+let cards = loadCards();
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); }
 
 function addCard(){
   cards.push({name:'', type:'CC', annualFee:0, monthlyFee:0, waiverSpend:0, actualSpend:0, rewardsValue:0});
+  save();
   render();
 }
 function removeCard(i){
   cards.splice(i,1);
+  save();
   render();
 }
 function updateField(i, field, val){
   cards[i][field] = (field==='name'||field==='type') ? val : (parseFloat(val)||0);
+  save();
   updateAll();
 }
 
@@ -126,7 +137,7 @@ function updateAll(){
     totalNet += net;
     const netEl = div.querySelector('[data-role="net"]');
     const badgeEl = div.querySelector('[data-role="badge"]');
-    netEl.textContent = (net>=0?'+':'') + '₹' + net.toFixed(0) + '/yr' + (feeWaived ? ' (fee waived)' : '');
+    netEl.textContent = (net>=0?'+':'') + inr(net) + '/yr' + (feeWaived ? ' (fee waived)' : '');
     netEl.style.color = net >= 0 ? 'var(--acc)' : 'var(--bad)';
     badgeEl.classList.remove('good','mid','bad');
     if(net > 0){ badgeEl.classList.add('good'); badgeEl.textContent = 'Keep'; }
@@ -134,7 +145,7 @@ function updateAll(){
     else { badgeEl.classList.add('bad'); badgeEl.textContent = 'Close it'; }
   });
   const totalEl = document.getElementById('totalNet');
-  totalEl.textContent = (totalNet>=0?'+':'') + '₹' + totalNet.toFixed(0);
+  totalEl.textContent = (totalNet>=0?'+':'') + inr(totalNet);
   totalEl.style.color = totalNet >= 0 ? 'var(--acc)' : 'var(--bad)';
 }
 

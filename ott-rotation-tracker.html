@@ -57,23 +57,36 @@
 </div>
 
 <script>
-let platforms = [
-  {name:'Amazon Prime', cost:299, active:true, watchlist:''},
-  {name:'Netflix', cost:499, active:false, watchlist:''},
-];
+const STORAGE_KEY = 'ott_rotation_platforms_v1';
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function loadPlatforms(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(Array.isArray(saved) && saved.length) return saved;
+  }catch(e){}
+  return [
+    {name:'Amazon Prime', cost:299, active:true, watchlist:''},
+    {name:'Netflix', cost:499, active:false, watchlist:''},
+  ];
+}
+let platforms = loadPlatforms();
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(platforms)); }
 
 function addOTT(){
   platforms.push({name:'', cost:0, active:false, watchlist:''});
+  save();
   render();
 }
 function removeOTT(i){
   platforms.splice(i,1);
+  save();
   render();
 }
 function updateField(i, field, val){
   if(field==='active'){ platforms[i].active = val; }
   else if(field==='name' || field==='watchlist'){ platforms[i][field] = val; }
   else { platforms[i][field] = parseFloat(val)||0; }
+  save();
   updateInPlace(i);
   updateSummary();
 }
@@ -92,9 +105,9 @@ function updateInPlace(i){
 function updateSummary(){
   const activeSpend = platforms.filter(p=>p.active).reduce((s,p)=>s+p.cost,0);
   const allSpend = platforms.reduce((s,p)=>s+p.cost,0);
-  document.getElementById('activeSpend').textContent = '₹'+activeSpend.toFixed(0);
-  document.getElementById('allSpend').textContent = '₹'+allSpend.toFixed(0);
-  document.getElementById('saved').textContent = '₹'+(allSpend-activeSpend).toFixed(0);
+  document.getElementById('activeSpend').textContent = inr(activeSpend);
+  document.getElementById('allSpend').textContent = inr(allSpend);
+  document.getElementById('saved').textContent = inr(allSpend-activeSpend);
 }
 
 function render(){
@@ -125,12 +138,7 @@ function render(){
     `;
     container.appendChild(div);
   });
-
-  const activeSpend = platforms.filter(p=>p.active).reduce((s,p)=>s+p.cost,0);
-  const allSpend = platforms.reduce((s,p)=>s+p.cost,0);
-  document.getElementById('activeSpend').textContent = '₹'+activeSpend.toFixed(0);
-  document.getElementById('allSpend').textContent = '₹'+allSpend.toFixed(0);
-  document.getElementById('saved').textContent = '₹'+(allSpend-activeSpend).toFixed(0);
+  updateSummary();
 }
 
 render();

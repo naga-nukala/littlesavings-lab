@@ -54,15 +54,26 @@
 </div>
 
 <script>
-let plans = [
-  {name:'Fiber Broadband', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0},
-  {name:'Mobile Data / Dongle', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0}
-];
+const STORAGE_KEY = 'internet_cost_plans_v1';
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function loadPlans(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(Array.isArray(saved) && saved.length) return saved;
+  }catch(e){}
+  return [
+    {name:'Fiber Broadband', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0},
+    {name:'Mobile Data / Dongle', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0}
+  ];
+}
+let plans = loadPlans();
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(plans)); }
 
-function addPlan(){ plans.push({name:'', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0}); renderPlans(); }
-function removePlan(i){ plans.splice(i,1); renderPlans(); }
+function addPlan(){ plans.push({name:'', monthly:0, routerCost:0, routerLifeMonths:24, cashbackPct:0}); save(); renderPlans(); }
+function removePlan(i){ plans.splice(i,1); save(); renderPlans(); }
 function updatePlan(i, field, val){
   plans[i][field] = field==='name' ? val : (parseFloat(val)||0);
+  save();
   calc();
 }
 
@@ -107,9 +118,9 @@ function calc(){
     <div class="plan-line">
       <div class="plan-head">
         <span>${p.name}${i===0?'<span class="best-tag">CHEAPEST</span>':''}</span>
-        <span class="cost-val" style="color:${i===0?'var(--acc)':'var(--txt)'};">₹${p.effective.toFixed(0)}/mo</span>
+        <span class="cost-val" style="color:${i===0?'var(--acc)':'var(--txt)'};">${inr(p.effective)}/mo</span>
       </div>
-      <div class="plan-sub">Plan ₹${p.monthly}${p.routerAmort>0?` + ₹${p.routerAmort.toFixed(0)} router (amortized)`:''}${p.cashback>0?` − ₹${p.cashback.toFixed(0)} cashback`:''}</div>
+      <div class="plan-sub">Plan ${inr(p.monthly)}${p.routerAmort>0?` + ${inr(p.routerAmort)} router (amortized)`:''}${p.cashback>0?` − ${inr(p.cashback)} cashback`:''}</div>
     </div>
   `).join('');
 }
