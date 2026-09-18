@@ -37,12 +37,15 @@
   .entry-item{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid #334155;}
   .entry-item:last-child{border-bottom:none;}
   .entry-meta{color:var(--sub);font-size:11px;}
-  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;}
+  .edit{background:none;border:none;color:var(--acc);cursor:pointer;font-size:12px;margin-left:6px;}
+  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;margin-left:6px;}
   .invest-btn{background:none;border:1px solid var(--acc);color:var(--acc);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;}
 
   .dest-line{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #334155;}
   .dest-line:last-child{border-bottom:none;}
   .empty{text-align:center;color:var(--sub);font-size:13px;padding:16px;}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#334155;color:var(--txt);padding:10px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:100;white-space:nowrap;display:none;}
+  .del.confirming{background:var(--bad);color:#fff;border-radius:6px;padding:2px 6px;}
 </style>
 </head>
 <body>
@@ -72,7 +75,7 @@
       <div class="field"><label>Source</label><input type="text" id="source" placeholder="e.g. Gift card discount"></div>
       <div class="field"><label>Amount (₹)</label><input type="number" id="amount" placeholder="e.g. 150"></div>
     </div>
-    <button class="add" onclick="logSaving()">+ Add to Pool</button>
+    <button class="add" id="logBtn" onclick="logSaving()">+ Add to Pool</button>
   </div>
 
   <div class="card">
@@ -103,15 +106,51 @@
     <div id="destList"></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
 const STORAGE_KEY = 'micro_invest_entries';
 const INVEST_KEY = 'micro_invest_destinations';
 let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let investments = JSON.parse(localStorage.getItem(INVEST_KEY) || '[]');
+let editingId = null;
+let pendingDeletes = {};
+
+function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+
+function ordinalDate(d){
+  const day = d.getDate();
+  const suffix = (day%10===1&&day!==11) ? 'st' : (day%10===2&&day!==12) ? 'nd' : (day%10===3&&day!==13) ? 'rd' : 'th';
+  const month = d.toLocaleDateString('en-IN', {month:'short'});
+  return `${day}${suffix} ${month} ${d.getFullYear()}`;
+}
 
 function saveEntries(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
 function saveInvestments(){ localStorage.setItem(INVEST_KEY, JSON.stringify(investments)); }
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2000);
+}
+
+function confirmDelete(key, btn, action){
+  if(pendingDeletes[key]){
+    clearTimeout(pendingDeletes[key]);
+    delete pendingDeletes[key];
+    action();
+    return;
+  }
+  if(btn){ btn.textContent = '✔'; btn.classList.add('confirming'); }
+  showToast('Tap ✕ again to confirm delete');
+  pendingDeletes[key] = setTimeout(() => {
+    delete pendingDeletes[key];
+    if(btn){ btn.textContent = '✕'; btn.classList.remove('confirming'); }
+  }, 2500);
+}
 
 function quickFill(label){
   document.getElementById('source').value = label;
@@ -123,7 +162,14 @@ function logSaving(){
   const amount = parseFloat(document.getElementById('amount').value) || 0;
   if(!source || amount<=0) return;
 
-  entries.push({ id: Date.now(), source, amount, date: new Date().toLocaleDateString('en-IN'), invested: false });
+  if(editingId){
+    const idx = entries.findIndex(e=>e.id===editingId);
+    if(idx>-1) entries[idx] = { ...entries[idx], source, amount };
+    editingId = null;
+    document.getElementById('logBtn').textContent = '+ Add to Pool';
+  } else {
+    entries.push({ id: Date.now(), source, amount, date: ordinalDate(new Date()), invested: false });
+  }
   saveEntries();
 
   document.getElementById('source').value='';
@@ -133,10 +179,23 @@ function logSaving(){
   render();
 }
 
-function removeEntry(id){
-  entries = entries.filter(e=>e.id!==id);
-  saveEntries();
-  render();
+function editEntry(id){
+  const e = entries.find(e=>e.id===id && !e.invested);
+  if(!e) return;
+  document.getElementById('source').value = e.source;
+  document.getElementById('amount').value = e.amount;
+  editingId = id;
+  document.getElementById('logBtn').textContent = '✓ Update Entry';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function removeEntry(id, btn){
+  confirmDelete('entry-'+id, btn, () => {
+    entries = entries.filter(e=>e.id!==id);
+    saveEntries();
+    render();
+    showToast('Entry deleted');
+  });
 }
 
 function poolTotal(){
@@ -148,10 +207,9 @@ function investPool(){
   const amount = parseFloat(document.getElementById('investAmount').value) || 0;
   const available = poolTotal();
 
-  if(amount<=0){ alert('Enter an amount to invest.'); return; }
-  if(amount > available){ alert(`Only ₹${available.toFixed(0)} available in pool.`); return; }
+  if(amount<=0){ showToast('Enter an amount to invest.'); return; }
+  if(amount > available){ showToast(`Only ${fmt(available)} available in pool.`); return; }
 
-  // mark entries as invested (oldest first) up to the amount
   let remaining = amount;
   for(const e of entries){
     if(remaining<=0) break;
@@ -160,7 +218,6 @@ function investPool(){
       if(take === e.amount){
         e.invested = true;
       } else {
-        // split entry
         e.amount -= take;
         entries.push({ id: Date.now()+Math.random(), source: e.source, amount: take, date: e.date, invested: true });
       }
@@ -169,7 +226,7 @@ function investPool(){
   }
   saveEntries();
 
-  investments.push({ id: Date.now(), destination, amount, date: new Date().toLocaleDateString('en-IN') });
+  investments.push({ id: Date.now(), destination, amount, date: ordinalDate(new Date()) });
   saveInvestments();
 
   document.getElementById('investAmount').value = '';
@@ -178,12 +235,11 @@ function investPool(){
 
 function render(){
   const pool = poolTotal();
-  const totalLogged = entries.reduce((s,e)=>s+e.amount,0) + investments.reduce((s,i)=>0,0); // logged = sum of all entry amounts ever (already accounts for splits)
   const totalInvested = investments.reduce((s,i)=>s+i.amount,0);
 
-  document.getElementById('poolAmount').textContent = '₹' + pool.toFixed(0);
-  document.getElementById('totalLogged').textContent = '₹' + (pool + totalInvested).toFixed(0);
-  document.getElementById('totalInvested').textContent = '₹' + totalInvested.toFixed(0);
+  document.getElementById('poolAmount').textContent = fmt(pool);
+  document.getElementById('totalLogged').textContent = fmt(pool + totalInvested);
+  document.getElementById('totalInvested').textContent = fmt(totalInvested);
 
   const logList = document.getElementById('logList');
   const recent = [...entries].filter(e=>!e.invested).sort((a,b)=>b.id-a.id).slice(0,10);
@@ -192,7 +248,7 @@ function render(){
     : recent.map(e=>`
       <div class="entry-item">
         <span>${e.source}<div class="entry-meta">${e.date}</div></span>
-        <span>₹${e.amount.toFixed(0)} <button class="del" onclick="removeEntry(${e.id})">✕</button></span>
+        <span>${fmt(e.amount)} <button class="edit" onclick="editEntry(${e.id})">Edit</button> <button class="del" onclick="removeEntry(${e.id}, this)">✕</button></span>
       </div>
     `).join('');
 
@@ -203,7 +259,7 @@ function render(){
     const grouped = {};
     investments.forEach(i=>{ grouped[i.destination] = (grouped[i.destination]||0) + i.amount; });
     destList.innerHTML = Object.keys(grouped).map(dest=>`
-      <div class="dest-line"><span>${dest}</span><span style="color:var(--acc);font-weight:700;">₹${grouped[dest].toFixed(0)}</span></div>
+      <div class="dest-line"><span>${dest}</span><span style="color:var(--acc);font-weight:700;">${fmt(grouped[dest])}</span></div>
     `).join('');
   }
 }

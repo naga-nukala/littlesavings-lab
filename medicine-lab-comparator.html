@@ -34,13 +34,16 @@
   .item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .item-name{font-weight:700;font-size:14px;}
   .type-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.15);color:#60a5fa;font-weight:700;margin-left:6px;}
-  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;}
+  .edit{background:none;border:none;color:var(--acc);cursor:pointer;font-size:12px;margin-left:6px;}
+  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;margin-left:6px;}
   .opt-line{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
   .opt-best{color:var(--acc);font-weight:700;}
   .tag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.15);color:var(--acc);font-weight:700;margin-left:6px;}
   .empty{text-align:center;color:var(--sub);font-size:13px;padding:20px;}
   .clear-btn{background:none;border:none;color:var(--bad);font-size:12px;cursor:pointer;float:right;}
   .save-total{text-align:center;padding:14px;background:#0f172a;border-radius:10px;margin-top:10px;font-size:14px;color:var(--acc);font-weight:700;}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#334155;color:var(--txt);padding:10px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:100;white-space:nowrap;display:none;}
+  .del.confirming{background:var(--bad);color:#fff;border-radius:6px;padding:2px 6px;}
 </style>
 </head>
 <body>
@@ -64,7 +67,7 @@
     <div id="platformRows"></div>
     <button class="add-platform" onclick="addPlatformRow()">+ Add Platform / Shop</button>
 
-    <button class="add" onclick="addEntry()">Save Item</button>
+    <button class="add" id="saveBtn" onclick="addEntry()">Save Item</button>
   </div>
 
   <div class="card">
@@ -73,14 +76,43 @@
     <div class="save-total" id="totalSavings" style="display:none;"></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
 const STORAGE_KEY = 'medicine_comparator_entries_v2';
 let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let editingId = null;
+let pendingDeletes = {};
 let draftPlatforms = [
   {platform:'', price:0},
   {platform:'', price:0}
 ];
+
+function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2}); }
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2000);
+}
+
+function confirmDelete(key, btn, action){
+  if(pendingDeletes[key]){
+    clearTimeout(pendingDeletes[key]);
+    delete pendingDeletes[key];
+    action();
+    return;
+  }
+  if(btn){ btn.textContent = '✔'; btn.classList.add('confirming'); }
+  showToast('Tap ✕ again to confirm delete');
+  pendingDeletes[key] = setTimeout(() => {
+    delete pendingDeletes[key];
+    if(btn){ btn.textContent = '✕'; btn.classList.remove('confirming'); }
+  }, 2500);
+}
 
 function addPlatformRow(){
   draftPlatforms.push({platform:'', price:0});
@@ -119,6 +151,14 @@ function updateDiscountTags(){
   });
 }
 
+function clearForm(){
+  document.getElementById('itemName').value='';
+  document.getElementById('itemType').value='Medicine';
+  document.getElementById('mrp').value='';
+  draftPlatforms = [{platform:'', price:0},{platform:'', price:0}];
+  buildPlatformRows();
+}
+
 function addEntry(){
   const name = document.getElementById('itemName').value.trim();
   const type = document.getElementById('itemType').value;
@@ -127,29 +167,51 @@ function addEntry(){
 
   if(!name || mrp<=0 || platforms.length===0) return;
 
-  entries.push({ id: Date.now(), name, type, mrp, platforms });
+  if(editingId){
+    const idx = entries.findIndex(e=>e.id===editingId);
+    if(idx>-1) entries[idx] = { ...entries[idx], name, type, mrp, platforms };
+    editingId = null;
+    document.getElementById('saveBtn').textContent = 'Save Item';
+  } else {
+    entries.push({ id: Date.now(), name, type, mrp, platforms });
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 
-  document.getElementById('itemName').value='';
-  document.getElementById('mrp').value='';
-  draftPlatforms = [{platform:'', price:0},{platform:'', price:0}];
-  buildPlatformRows();
+  clearForm();
   document.getElementById('itemName').focus();
 
   render();
 }
 
-function removeEntry(id){
-  entries = entries.filter(e=>e.id!==id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  render();
+function editEntry(id){
+  const e = entries.find(e=>e.id===id);
+  if(!e) return;
+  document.getElementById('itemName').value = e.name;
+  document.getElementById('itemType').value = e.type;
+  document.getElementById('mrp').value = e.mrp;
+  draftPlatforms = e.platforms.map(p=>({...p}));
+  buildPlatformRows();
+  editingId = id;
+  document.getElementById('saveBtn').textContent = '✓ Update Item';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function removeEntry(id, btn){
+  confirmDelete('entry-'+id, btn, () => {
+    entries = entries.filter(e=>e.id!==id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    render();
+    showToast('Item deleted');
+  });
 }
 
 function clearAll(){
-  if(!confirm('Clear all saved items?')) return;
-  entries = [];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  render();
+  confirmDelete('all', null, () => {
+    entries = [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    render();
+    showToast('All items cleared');
+  });
 }
 
 function render(){
@@ -173,7 +235,7 @@ function render(){
       const disc = e.mrp>0 ? ((e.mrp-p.price)/e.mrp)*100 : 0;
       return `<div class="opt-line ${i===0?'opt-best':''}">
         <span>${p.platform}${i===0?'<span class="tag">BEST</span>':''}</span>
-        <span>₹${p.price.toFixed(0)} (${disc>=0?disc.toFixed(0)+'% off':Math.abs(disc).toFixed(0)+'% above MRP'})</span>
+        <span>${fmt(p.price)} (${disc>=0?disc.toFixed(0)+'% off':Math.abs(disc).toFixed(0)+'% above MRP'})</span>
       </div>`;
     }).join('');
 
@@ -181,9 +243,12 @@ function render(){
       <div class="item">
         <div class="item-head">
           <span class="item-name">${e.name}<span class="type-badge">${e.type}</span></span>
-          <button class="del" onclick="removeEntry(${e.id})">✕</button>
+          <span>
+            <button class="edit" onclick="editEntry(${e.id})">Edit</button>
+            <button class="del" onclick="removeEntry(${e.id}, this)">✕</button>
+          </span>
         </div>
-        <div class="opt-line"><span>Actual MRP</span><span>₹${e.mrp.toFixed(0)}</span></div>
+        <div class="opt-line"><span>Actual MRP</span><span>${fmt(e.mrp)}</span></div>
         ${lines}
       </div>
     `;
@@ -191,7 +256,7 @@ function render(){
 
   const totalSaved = totalMrp - totalBest;
   totalBox.style.display = 'block';
-  totalBox.textContent = `Total: ₹${totalMrp.toFixed(0)} MRP → ₹${totalBest.toFixed(0)} best price (saved ₹${totalSaved.toFixed(0)})`;
+  totalBox.textContent = `Total: ${fmt(totalMrp)} MRP → ${fmt(totalBest)} best price (saved ${fmt(totalSaved)})`;
 }
 
 buildPlatformRows();
