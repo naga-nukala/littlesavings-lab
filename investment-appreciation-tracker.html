@@ -10,7 +10,7 @@
 <style>
   :root{--bg:#0f172a;--card:#1e293b;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--txt:#e2e8f0;--sub:#94a3b8;}
   *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:20px;padding-bottom:70px;}
   .wrap{max-width:600px;margin:0 auto;}
   h1{font-size:20px;margin-bottom:4px;}
   p.sub{color:var(--sub);font-size:13px;margin-top:0;margin-bottom:20px;}
@@ -20,27 +20,40 @@
   input[type=date]{color-scheme:dark;}
   input:focus, select:focus{outline:2px solid var(--acc);}
   .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-  .field{flex:1;min-width:100px;}
+  .field{flex:1;min-width:130px;}
   button.add{width:100%;padding:12px;border:none;border-radius:10px;background:var(--acc);color:#052e16;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px;}
 
+  /* Summary */
   .summary-box{text-align:center;padding:20px 16px;}
-  .summary-num{font-size:32px;font-weight:800;}
-  .summary-label{color:var(--sub);font-size:12px;}
-  .stat-row{display:flex;gap:10px;margin-top:14px;}
-  .stat{flex:1;text-align:center;background:#0f172a;border-radius:10px;padding:12px;}
-  .stat .n{font-size:16px;font-weight:700;}
-  .stat .l{font-size:10px;color:var(--sub);margin-top:2px;}
+  .summary-num{font-size:34px;font-weight:800;line-height:1.1;}
+  .summary-label{color:var(--sub);font-size:12px;margin-top:2px;}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+  .stat{background:#0f172a;border-radius:10px;padding:12px 8px;text-align:center;min-width:0;}
+  .stat.wide{grid-column:1 / -1;}
+  .stat .n{font-size:17px;font-weight:700;white-space:nowrap;}
+  .stat .l{font-size:11px;color:var(--sub);margin-top:2px;}
+  .pos{color:var(--acc);} .neg{color:var(--bad);}
 
-  .inv-item{border-bottom:1px solid #334155;padding:12px 0;}
-  .inv-item:last-child{border-bottom:none;}
-  .inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
-  .inv-name{font-weight:700;font-size:14px;}
-  .type-tag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.15);color:#60a5fa;font-weight:700;margin-left:6px;}
-  .del{background:none;border:none;color:var(--bad);cursor:pointer;font-size:13px;}
-  .inv-meta{font-size:12px;color:var(--sub);margin-bottom:4px;}
-  .gain-pos{color:var(--acc);font-weight:700;}
-  .gain-neg{color:var(--bad);font-weight:700;}
+  /* Investment item */
+  .inv-item{border-bottom:1px solid #334155;padding:14px 0;}
+  .inv-item:last-child{border-bottom:none;padding-bottom:0;}
+  .inv-item:first-child{padding-top:0;}
+  .inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .inv-name{font-weight:700;font-size:15px;word-break:break-word;}
+  .type-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.15);color:#60a5fa;font-weight:700;margin-top:4px;}
+  .inv-actions{display:flex;gap:6px;flex-shrink:0;}
+  .inv-actions button{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--acc);}
+  .inv-actions button.del{color:var(--bad);}
+  .inv-actions button.confirming{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .inv-value{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .inv-now{font-size:22px;font-weight:800;}
+  .gain-pill{font-size:13px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+  .gain-pill.pos{background:rgba(34,197,94,.15);}
+  .gain-pill.neg{background:rgba(239,68,68,.15);}
+  .inv-meta{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.6;}
+  .inv-meta b{color:var(--txt);font-weight:600;}
   .empty{text-align:center;color:var(--sub);font-size:13px;padding:20px;}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#334155;color:var(--txt);padding:10px 18px;border-radius:20px;font-size:13px;border:1px solid #475569;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:100;display:none;max-width:90%;}
 </style>
 </head>
 <body>
@@ -51,17 +64,17 @@
   <div class="card summary-box">
     <div class="summary-num" id="totalGainPct">0%</div>
     <div class="summary-label">Overall Portfolio Gain</div>
-    <div class="stat-row">
+    <div class="stat-grid">
       <div class="stat"><div class="n" id="totalInvested">₹0</div><div class="l">Total Invested</div></div>
       <div class="stat"><div class="n" id="totalCurrent">₹0</div><div class="l">Current Value</div></div>
-      <div class="stat"><div class="n" id="totalGainAmt">₹0</div><div class="l">Absolute Gain</div></div>
+      <div class="stat wide"><div class="n" id="totalGainAmt">₹0</div><div class="l">Absolute Gain</div></div>
     </div>
   </div>
 
   <div class="card">
     <div class="row">
-      <div class="field"><label>Investment Name</label><input type="text" id="invName" placeholder="e.g. Axis Bluechip SIP"></div>
-      <div class="field"><label>Type</label>
+      <div class="field"><label for="invName">Investment Name</label><input type="text" id="invName" placeholder="e.g. Axis Bluechip SIP"></div>
+      <div class="field"><label for="invType">Type</label>
         <select id="invType">
           <option value="SIP/Mutual Fund">SIP/Mutual Fund</option>
           <option value="Stocks">Stocks</option>
@@ -74,13 +87,13 @@
       </div>
     </div>
     <div class="row">
-      <div class="field"><label>Invested Amount (₹)</label><input type="number" id="investedAmt" placeholder="e.g. 50000"></div>
-      <div class="field"><label>Investment Date</label><input type="date" id="investedDate"></div>
+      <div class="field"><label for="investedAmt">Invested Amount (₹)</label><input type="number" id="investedAmt" placeholder="e.g. 50000" inputmode="decimal"></div>
+      <div class="field"><label for="investedDate">Investment Date</label><input type="date" id="investedDate"></div>
     </div>
     <div class="row">
-      <div class="field"><label>Current Value (₹)</label><input type="number" id="currentVal" placeholder="e.g. 58000"></div>
+      <div class="field"><label for="currentVal">Current Value (₹)</label><input type="number" id="currentVal" placeholder="e.g. 58000" inputmode="decimal"></div>
     </div>
-    <button class="add" id="addBtn" onclick="addInvestment()">+ Add Investment</button>
+    <button class="add" id="addBtn" type="button">+ Add Investment</button>
   </div>
 
   <div class="card">
@@ -88,25 +101,59 @@
     <div id="invList"></div>
   </div>
 </div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 const STORAGE_KEY = 'investment_appreciation_entries';
-let investments = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let investments = [];
+try { investments = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { investments = []; }
 let editingId = null;
 
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(investments)); }
-function todayStr(){ return new Date().toISOString().split('T')[0]; }
-document.getElementById('investedDate').max = todayStr();
-
-function yearsHeld(dateStr){
-  const then = new Date(dateStr);
-  const now = new Date();
-  return Math.max((now - then) / (1000*60*60*24*365.25), 1/365);
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(investments)); }catch(e){} }
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function fmt(n){ return (n<0?'-':'') + '₹' + Math.round(Math.abs(n)).toLocaleString('en-IN'); }
+function fmtSigned(n){ return (n>=0?'+':'-') + '₹' + Math.round(Math.abs(n)).toLocaleString('en-IN'); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseLocal(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function formatDate(s){
+  const d = parseLocal(s); if(isNaN(d)) return s;
+  const day = d.getDate();
+  const suffix = (day%100>=11 && day%100<=13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[day%10] || 'th');
+  return day + suffix + ' ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear();
+}
+function daysHeld(s){
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.max(0, Math.round((t - parseLocal(s)) / 86400000));
+}
+function heldLabel(days){
+  if(days < 1) return 'today';
+  if(days < 30) return days + (days===1?' day':' days');
+  if(days < 365){ const m=Math.floor(days/30); return m + (m===1?' month':' months'); }
+  const y=Math.floor(days/365), m=Math.floor((days%365)/30);
+  return y + (y===1?' yr':' yrs') + (m ? ' ' + m + ' mo' : '');
+}
+function cagr(invested, current, days){
+  if(days < 365 || invested <= 0 || current <= 0) return null; // annualising <1 year is misleading
+  return (Math.pow(current/invested, 365/days) - 1) * 100;
 }
 
-function cagr(invested, current, years){
-  if(invested<=0 || years<=0) return 0;
-  return (Math.pow(current/invested, 1/years) - 1) * 100;
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.style.display='none'; }, 2200);
+}
+const pending = {};
+function confirmTwice(key, btn, action){
+  if(pending[key]){ clearTimeout(pending[key]); delete pending[key]; action(); return; }
+  btn.classList.add('confirming'); btn.textContent='Sure?';
+  showToast('Tap again to delete');
+  pending[key]=setTimeout(()=>{ delete pending[key]; btn.classList.remove('confirming'); btn.textContent='✕'; }, 2500);
+}
+
+function clearForm(){
+  ['invName','investedAmt','investedDate','currentVal'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('invType').selectedIndex = 0;
 }
 
 function addInvestment(){
@@ -116,30 +163,26 @@ function addInvestment(){
   const date = document.getElementById('investedDate').value || todayStr();
   const current = parseFloat(document.getElementById('currentVal').value) || 0;
 
-  if(!name || invested<=0 || current<=0) return;
-  if(date > todayStr()){ alert('Investment date cannot be in the future.'); return; }
+  if(!name){ showToast('Enter an investment name.'); return; }
+  if(invested<=0){ showToast('Invested amount must be above ₹0.'); return; }
+  if(current<=0){ showToast('Enter the current value.'); return; }
+  if(date > todayStr()){ showToast('Investment date cannot be in the future.'); return; }
 
   if(editingId !== null){
     const idx = investments.findIndex(i=>i.id===editingId);
     if(idx > -1) investments[idx] = { ...investments[idx], name, type, invested, date, current };
     editingId = null;
     document.getElementById('addBtn').textContent = '+ Add Investment';
+    showToast('Investment updated');
   } else {
     investments.push({ id: Date.now(), name, type, invested, date, current });
+    showToast('Investment added');
   }
-  save();
-
-  document.getElementById('invName').value='';
-  document.getElementById('investedAmt').value='';
-  document.getElementById('investedDate').value='';
-  document.getElementById('currentVal').value='';
-
-  render();
+  save(); clearForm(); render();
 }
 
 function editInvestment(id){
-  const i = investments.find(i=>i.id===id);
-  if(!i) return;
+  const i = investments.find(x=>x.id===id); if(!i) return;
   document.getElementById('invName').value = i.name;
   document.getElementById('invType').value = i.type;
   document.getElementById('investedAmt').value = i.invested;
@@ -152,60 +195,70 @@ function editInvestment(id){
 
 function removeInvestment(id){
   investments = investments.filter(i=>i.id!==id);
-  save();
-  render();
+  if(editingId===id){ editingId=null; document.getElementById('addBtn').textContent='+ Add Investment'; clearForm(); }
+  save(); render(); showToast('Investment deleted');
 }
 
 function render(){
   const container = document.getElementById('invList');
+  const pctEl = document.getElementById('totalGainPct');
+  const gainEl = document.getElementById('totalGainAmt');
 
   if(investments.length===0){
-    container.innerHTML = '<div class="empty">No investments tracked yet.</div>';
+    container.innerHTML = '<div class="empty">No investments tracked yet. Add your first one above.</div>';
     document.getElementById('totalInvested').textContent = '₹0';
     document.getElementById('totalCurrent').textContent = '₹0';
-    document.getElementById('totalGainAmt').textContent = '₹0';
-    document.getElementById('totalGainPct').textContent = '0%';
+    gainEl.textContent = '₹0'; gainEl.className = 'n';
+    pctEl.textContent = '0%'; pctEl.className = 'summary-num';
     return;
   }
 
   let totalInvested = 0, totalCurrent = 0;
-
   container.innerHTML = investments.map(i=>{
-    totalInvested += i.invested;
-    totalCurrent += i.current;
+    totalInvested += i.invested; totalCurrent += i.current;
     const gainAmt = i.current - i.invested;
-    const gainPct = i.invested>0 ? (gainAmt/i.invested)*100 : 0;
-    const years = yearsHeld(i.date);
-    const annualized = cagr(i.invested, i.current, years);
-    const gainClass = gainAmt >= 0 ? 'gain-pos' : 'gain-neg';
-
+    const gainPct = (gainAmt / i.invested) * 100;
+    const days = daysHeld(i.date);
+    const ann = cagr(i.invested, i.current, days);
+    const cls = gainAmt >= 0 ? 'pos' : 'neg';
+    const annText = ann === null ? 'Annualized return shows after 1 year' : '<b class="'+(ann>=0?'pos':'neg')+'">' + (ann>=0?'+':'') + ann.toFixed(1) + '% per year</b>';
     return `
       <div class="inv-item">
         <div class="inv-head">
-          <span class="inv-name">${i.name}<span class="type-tag">${i.type}</span></span>
-          <span>
-            <button class="del" style="color:var(--acc);" onclick="editInvestment(${i.id})">Edit</button>
-            <button class="del" onclick="removeInvestment(${i.id})">✕</button>
-          </span>
+          <div><div class="inv-name">${esc(i.name)}</div><span class="type-tag">${esc(i.type)}</span></div>
+          <div class="inv-actions">
+            <button type="button" data-action="edit" data-id="${i.id}">Edit</button>
+            <button type="button" class="del" data-action="del" data-id="${i.id}" aria-label="Delete ${esc(i.name)}">✕</button>
+          </div>
         </div>
-        <div class="inv-meta">Invested ₹${i.invested.toFixed(0)} on ${i.date} • ${years.toFixed(1)}y held • Now ₹${i.current.toFixed(0)}</div>
-        <div class="${gainClass}">${gainAmt>=0?'+':''}₹${gainAmt.toFixed(0)} (${gainPct>=0?'+':''}${gainPct.toFixed(1)}%) • ~${annualized.toFixed(1)}% annualized</div>
-      </div>
-    `;
+        <div class="inv-value">
+          <span class="inv-now">${fmt(i.current)}</span>
+          <span class="gain-pill ${cls}">${fmtSigned(gainAmt)} (${gainPct>=0?'+':''}${gainPct.toFixed(1)}%)</span>
+        </div>
+        <div class="inv-meta">
+          Invested <b>${fmt(i.invested)}</b> on <b>${formatDate(i.date)}</b><br>
+          Held <b>${heldLabel(days)}</b> · ${annText}
+        </div>
+      </div>`;
   }).join('');
 
   const totalGain = totalCurrent - totalInvested;
-  const totalGainPct = totalInvested>0 ? (totalGain/totalInvested)*100 : 0;
-
-  document.getElementById('totalInvested').textContent = '₹' + totalInvested.toFixed(0);
-  document.getElementById('totalCurrent').textContent = '₹' + totalCurrent.toFixed(0);
-  document.getElementById('totalGainAmt').textContent = (totalGain>=0?'+':'') + '₹' + totalGain.toFixed(0);
-
-  const pctEl = document.getElementById('totalGainPct');
-  pctEl.textContent = (totalGainPct>=0?'+':'') + totalGainPct.toFixed(1) + '%';
-  pctEl.style.color = totalGainPct >= 0 ? 'var(--acc)' : 'var(--bad)';
+  const totalPct = totalInvested>0 ? (totalGain/totalInvested)*100 : 0;
+  const cls = totalGain >= 0 ? 'pos' : 'neg';
+  document.getElementById('totalInvested').textContent = fmt(totalInvested);
+  document.getElementById('totalCurrent').textContent = fmt(totalCurrent);
+  gainEl.textContent = fmtSigned(totalGain); gainEl.className = 'n ' + cls;
+  pctEl.textContent = (totalPct>=0?'+':'') + totalPct.toFixed(1) + '%'; pctEl.className = 'summary-num ' + cls;
 }
 
+document.getElementById('invList').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-action]'); if(!btn) return;
+  const id = Number(btn.dataset.id);
+  if(btn.dataset.action==='edit') editInvestment(id);
+  else confirmTwice('del-'+id, btn, ()=>removeInvestment(id));
+});
+document.getElementById('addBtn').addEventListener('click', addInvestment);
+document.getElementById('investedDate').max = todayStr();
 render();
 </script>
 </body>

@@ -19,6 +19,7 @@
   .hint{font-size:12px;color:var(--sub);margin-bottom:8px;}
   input{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--txt);font-size:15px;}
   input:focus{outline:2px solid var(--acc);}
+  input[readonly]{border-style:dashed;color:var(--acc);font-weight:700;cursor:not-allowed;}
   .result-box{text-align:center;padding:24px 16px;}
   .result-num{font-size:36px;font-weight:800;color:var(--acc);}
   .result-label{color:var(--sub);font-size:13px;margin-top:2px;}
@@ -37,6 +38,7 @@
   .saved-section{margin-top:16px;}
   .saved-heading{display:flex;justify-content:space-between;align-items:center;color:var(--sub);font-size:12px;margin-bottom:8px;}
   .saved-heading button{flex:0 0 auto;padding:4px 8px;font-size:11px;}
+  .saved-heading button.confirming{background:var(--bad);border-color:var(--bad);color:#fff;}
   .saved-empty{color:var(--sub);font-size:12px;text-align:center;padding:10px 0;}
   .saved-item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px solid #334155;font-size:12px;}
   .saved-item strong{display:block;font-size:13px;margin-bottom:5px;}
@@ -45,7 +47,20 @@
   .saved-date{display:block;color:var(--sub);font-size:11px;margin-top:5px;}
   .saved-item-actions{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
   .saved-item button{flex:0 0 auto;padding:5px 8px;font-size:11px;}
-  @media(max-width:380px){.actions{flex-direction:column;}}
+  .saved-item button.confirming{background:var(--bad);border-color:var(--bad);color:#fff;}
+  details.split{margin-top:10px;border:1px solid #334155;border-radius:10px;padding:0 12px;}
+  details.split summary{cursor:pointer;padding:10px 0;font-size:13px;color:var(--sub);display:flex;justify-content:space-between;gap:8px;list-style:none;}
+  details.split summary::-webkit-details-marker{display:none;}
+  details.split summary::before{content:'▸';margin-right:6px;}
+  details.split[open] summary::before{content:'▾';}
+  details.split summary .sum{margin-left:auto;color:var(--acc);font-weight:700;}
+  .split-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .split-row label{flex:1;margin:0;font-size:13px;font-weight:500;}
+  .split-row label small{display:block;color:var(--sub);font-size:11px;font-weight:400;}
+  .split-row input{flex:0 0 120px;padding:8px;font-size:14px;}
+  .split-foot{padding:0 0 12px;}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#334155;color:var(--txt);padding:10px 18px;border-radius:20px;font-size:13px;border:1px solid #475569;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:100;display:none;max-width:90%;}
+  @media(max-width:380px){.actions{flex-direction:column;}.split-row input{flex-basis:100px;}}
 </style>
 </head>
 <body>
@@ -67,13 +82,33 @@
 
   <div class="card">
     <label for="current">Current Emergency Savings (₹)</label>
-    <div class="hint">Liquid funds only — savings a/c, liquid MF, FD you can break instantly</div>
+    <div class="hint">Type a total, or split by where it is kept below (optional)</div>
     <input type="number" id="current" value="0" min="0" step="100" inputmode="decimal" oninput="calc()">
+    <details class="split" id="curSplit">
+      <summary>Split by where it is kept <span class="sum" id="curSum"></span></summary>
+      <div class="split-row"><label for="cur_savings">Savings account<small>Instant</small></label><input type="number" id="cur_savings" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="cur_cash">Cash in hand<small>Instant</small></label><input type="number" id="cur_cash" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="cur_liquid">Liquid mutual fund<small>1 working day</small></label><input type="number" id="cur_liquid" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="cur_fd">Fixed deposit<small>Premature-break penalty applies</small></label><input type="number" id="cur_fd" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="cur_rd">Recurring deposit<small>Premature-break penalty applies</small></label><input type="number" id="cur_rd" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="cur_other">Other<small>Only if quickly convertible to cash</small></label><input type="number" id="cur_other" data-group="cur" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="hint split-foot">Total fills the field above automatically.</div>
+    </details>
   </div>
 
   <div class="card">
     <label for="monthlyContrib">Monthly Amount You Can Save Towards This (₹)</label>
+    <div class="hint">Type a total, or split by where it goes below (optional)</div>
     <input type="number" id="monthlyContrib" value="0" min="0" step="100" inputmode="decimal" oninput="calc()">
+    <details class="split" id="monSplit">
+      <summary>Split by where it goes <span class="sum" id="monSum"></span></summary>
+      <div class="split-row"><label for="mon_savings">Savings account<small>Transfer each month</small></label><input type="number" id="mon_savings" data-group="mon" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="mon_liquid">Liquid fund SIP</label><input type="number" id="mon_liquid" data-group="mon" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="mon_rd">Recurring deposit</label><input type="number" id="mon_rd" data-group="mon" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="mon_cash">Cash in hand</label><input type="number" id="mon_cash" data-group="mon" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="split-row"><label for="mon_other">Other</label><input type="number" id="mon_other" data-group="mon" min="0" step="100" inputmode="decimal" placeholder="0"></div>
+      <div class="hint split-foot">Total fills the field above automatically.</div>
+    </details>
   </div>
 
   <div class="card result-box">
@@ -89,27 +124,55 @@
     </div>
     <div class="verdict" id="verdict"></div>
     <div class="actions">
-      <button class="primary" type="button" onclick="saveReference()">Save Reference</button>
-      <button type="button" onclick="resetCalculator()">Reset</button>
+      <button class="primary" type="button" id="saveRefBtn">Save Reference</button>
+      <button type="button" id="resetBtn">Reset</button>
     </div>
   </div>
 
   <div class="saved-section" aria-live="polite">
-    <div class="saved-heading"><strong>Saved References</strong><button type="button" onclick="clearReferences()">Clear all</button></div>
+    <div class="saved-heading"><strong>Saved References</strong><button type="button" id="clearRefsBtn">Clear all</button></div>
     <div id="savedReferences"></div>
   </div>
 </div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 const DRAFT_KEY = 'emergencyFundCalculator_draft_v1';
 const REFERENCES_KEY = 'emergencyFundCalculator_references_v1';
-const FIELD_IDS = ['monthlyExp', 'months', 'current', 'monthlyContrib'];
+const MAIN_IDS = ['monthlyExp', 'months', 'current', 'monthlyContrib'];
+const SPLIT_IDS = ['cur_savings','cur_cash','cur_liquid','cur_fd','cur_rd','cur_other','mon_savings','mon_liquid','mon_rd','mon_cash','mon_other'];
+const FIELD_IDS = MAIN_IDS.concat(SPLIT_IDS);
+const GROUPS = { cur: {main:'current', sum:'curSum', box:'curSplit'}, mon: {main:'monthlyContrib', sum:'monSum', box:'monSplit'} };
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatCurrency(value){ return '₹' + Math.round(value).toLocaleString('en-IN'); }
+function formatDate(iso){
+  const d = new Date(iso); if(isNaN(d)) return '';
+  const day = d.getDate();
+  const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[day % 10] || 'th');
+  return day + suffix + ' ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2200);
+}
+
+// Tap-twice confirm (no native dialogs)
+const pending = {};
+function confirmTwice(key, btn, label, action){
+  if(pending[key]){ clearTimeout(pending[key]); delete pending[key]; btn.classList.remove('confirming'); btn.textContent = label; action(); return; }
+  btn.classList.add('confirming'); btn.textContent = 'Tap again';
+  showToast('Tap again to confirm');
+  pending[key] = setTimeout(() => { delete pending[key]; btn.classList.remove('confirming'); btn.textContent = label; }, 2500);
+}
 
 function readStorage(key, fallback){
-  try{
-    const value = JSON.parse(localStorage.getItem(key));
-    return value === null ? fallback : value;
-  }catch(error){ return fallback; }
+  try{ const value = JSON.parse(localStorage.getItem(key)); return value === null ? fallback : value; }
+  catch(error){ return fallback; }
 }
 
 function saveDraft(){
@@ -124,6 +187,24 @@ function loadDraft(){
   });
 }
 
+// Split totals: if any split row has a value, total auto-fills and locks the main field
+function syncSplit(group){
+  const g = GROUPS[group];
+  const inputs = [...document.querySelectorAll(`[data-group="${group}"]`)];
+  const filled = inputs.filter(i => i.value.trim() !== '');
+  const main = document.getElementById(g.main);
+  const sumEl = document.getElementById(g.sum);
+  if(filled.length){
+    const total = inputs.reduce((s, i) => s + (Math.max(parseFloat(i.value), 0) || 0), 0);
+    main.value = total; main.readOnly = true;
+    sumEl.textContent = formatCurrency(total);
+  } else {
+    if(main.readOnly){ main.value = '0'; }
+    main.readOnly = false; sumEl.textContent = '';
+  }
+}
+function syncAllSplits(){ Object.keys(GROUPS).forEach(syncSplit); }
+
 function getValues(){
   return {
     monthlyExp: parseFloat(document.getElementById('monthlyExp').value),
@@ -131,6 +212,11 @@ function getValues(){
     current: parseFloat(document.getElementById('current').value),
     monthlyContrib: parseFloat(document.getElementById('monthlyContrib').value)
   };
+}
+function getSplits(){
+  const out = {};
+  SPLIT_IDS.forEach(id => { const v = document.getElementById(id).value; if(v.trim() !== '') out[id] = v; });
+  return out;
 }
 
 function validValues(values){
@@ -152,11 +238,11 @@ function calc(){
   const gap = Math.max(0, target - current);
   const pct = target > 0 ? Math.min(100, (current/target)*100) : 0;
 
-  document.getElementById('targetNum').textContent = '₹' + target.toLocaleString('en-IN');
+  document.getElementById('targetNum').textContent = formatCurrency(target);
   document.getElementById('barFill').style.width = pct + '%';
   document.getElementById('pctText').textContent = pct.toFixed(0) + '% covered';
-  document.getElementById('gapText').textContent = 'Gap: ₹' + gap.toLocaleString('en-IN');
-  document.getElementById('gapNum').textContent = '₹' + gap.toLocaleString('en-IN');
+  document.getElementById('gapText').textContent = 'Gap: ' + formatCurrency(gap);
+  document.getElementById('gapNum').textContent = formatCurrency(gap);
 
   const monthsToGoal = contrib > 0 ? Math.ceil(gap / contrib) : null;
   document.getElementById('monthsToGoal').textContent = monthsToGoal !== null ? (monthsToGoal + ' mo') : '--';
@@ -170,42 +256,48 @@ function calc(){
 
 function saveReference(){
   const values = getValues();
-  if(!validValues(values)){ alert('Enter monthly expenses, a positive buffer, and non-negative savings values first.'); return; }
+  if(!validValues(values)){ showToast('Enter monthly expenses and a buffer of at least 1 month first.'); return; }
   const references = readStorage(REFERENCES_KEY, []);
-  references.unshift({id:Date.now().toString(36), savedAt:new Date().toISOString(), ...values});
+  references.unshift({id:Date.now().toString(36), savedAt:new Date().toISOString(), ...values, splits:getSplits()});
   try{ localStorage.setItem(REFERENCES_KEY, JSON.stringify(references.slice(0, 10))); }catch(error){}
   renderReferences();
+  showToast('Reference saved');
 }
 
 function deleteReference(id){
   const references = readStorage(REFERENCES_KEY, []).filter(reference => reference.id !== id);
   try{ localStorage.setItem(REFERENCES_KEY, JSON.stringify(references)); }catch(error){}
   renderReferences();
+  showToast('Reference deleted');
 }
 
 function restoreReference(id){
   const reference = readStorage(REFERENCES_KEY, []).find(item => item.id === id);
   if(!reference) return;
-  FIELD_IDS.forEach(fieldId => {
-    document.getElementById(fieldId).value = reference[fieldId];
-  });
+  const splits = reference.splits || {};
+  SPLIT_IDS.forEach(fid => { document.getElementById(fid).value = splits[fid] !== undefined ? splits[fid] : ''; });
+  MAIN_IDS.forEach(fid => { document.getElementById(fid).value = reference[fid]; });
+  document.getElementById('curSplit').open = SPLIT_IDS.some(fid => fid.startsWith('cur_') && splits[fid] !== undefined);
+  document.getElementById('monSplit').open = SPLIT_IDS.some(fid => fid.startsWith('mon_') && splits[fid] !== undefined);
+  syncAllSplits();
   calc();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function clearReferences(){
-  if(!readStorage(REFERENCES_KEY, []).length) return;
-  if(confirm('Clear all saved references?')){
-    try{ localStorage.removeItem(REFERENCES_KEY); }catch(error){}
-    renderReferences();
-  }
+  if(!readStorage(REFERENCES_KEY, []).length){ showToast('Nothing to clear'); return; }
+  try{ localStorage.removeItem(REFERENCES_KEY); }catch(error){}
+  renderReferences();
+  showToast('All references cleared');
 }
 
 function resetCalculator(){
   document.getElementById('monthlyExp').value = '';
   document.getElementById('months').value = '9';
+  SPLIT_IDS.forEach(fid => { document.getElementById(fid).value = ''; });
   document.getElementById('current').value = '0';
   document.getElementById('monthlyContrib').value = '0';
+  syncAllSplits();
   calc();
 }
 
@@ -218,14 +310,27 @@ function renderReferences(){
     const gap = Math.max(0, target - reference.current);
     const pct = target > 0 ? Math.min(100, (reference.current / target) * 100) : 0;
     const monthsToGoal = reference.monthlyContrib > 0 ? Math.ceil(gap / reference.monthlyContrib) : null;
-    const date = new Date(reference.savedAt).toLocaleDateString('en-IN');
-    return `<div class="saved-item"><div><strong>${formatCurrency(target)} target · ${pct.toFixed(0)}% covered</strong><div class="saved-details"><span>Expenses: <b>${formatCurrency(reference.monthlyExp)}/mo</b></span><span>Buffer: <b>${reference.months} months</b></span><span>Current: <b>${formatCurrency(reference.current)}</b></span><span>Covered: <b>${pct.toFixed(0)}%</b></span><span>Monthly saving: <b>${formatCurrency(reference.monthlyContrib)}</b></span><span>Shortfall: <b>${formatCurrency(gap)}</b></span><span>Time to goal: <b>${monthsToGoal === null ? '--' : monthsToGoal + ' mo'}</b></span></div><span class="saved-date">Saved ${date}</span></div><div class="saved-item-actions"><button type="button" onclick="restoreReference('${reference.id}')">Restore</button><button type="button" onclick="deleteReference('${reference.id}')" aria-label="Delete saved reference">Delete</button></div></div>`;
+    const date = formatDate(reference.savedAt);
+    return `<div class="saved-item"><div><strong>${formatCurrency(target)} target · ${pct.toFixed(0)}% covered</strong><div class="saved-details"><span>Expenses: <b>${formatCurrency(reference.monthlyExp)}/mo</b></span><span>Buffer: <b>${reference.months} months</b></span><span>Current: <b>${formatCurrency(reference.current)}</b></span><span>Covered: <b>${pct.toFixed(0)}%</b></span><span>Monthly saving: <b>${formatCurrency(reference.monthlyContrib)}</b></span><span>Shortfall: <b>${formatCurrency(gap)}</b></span><span>Time to goal: <b>${monthsToGoal === null ? '--' : monthsToGoal + ' mo'}</b></span></div><span class="saved-date">Saved ${date}</span></div><div class="saved-item-actions"><button type="button" data-action="restore" data-id="${reference.id}">Restore</button><button type="button" data-action="delete" data-id="${reference.id}" aria-label="Delete saved reference">Delete</button></div></div>`;
   }).join('');
 }
 
-function formatCurrency(value){ return '₹' + Math.round(value).toLocaleString('en-IN'); }
+// Event wiring (delegation, no inline handlers for dynamic content)
+document.getElementById('savedReferences').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-action]'); if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.dataset.action === 'restore') restoreReference(id);
+  else confirmTwice('del-' + id, btn, 'Delete', () => deleteReference(id));
+});
+document.getElementById('saveRefBtn').addEventListener('click', saveReference);
+document.getElementById('resetBtn').addEventListener('click', resetCalculator);
+const clearBtn = document.getElementById('clearRefsBtn');
+clearBtn.addEventListener('click', () => confirmTwice('clear-all', clearBtn, 'Clear all', clearReferences));
+document.querySelectorAll('[data-group]').forEach(input => input.addEventListener('input', () => { syncSplit(input.dataset.group); calc(); }));
 
 loadDraft();
+syncAllSplits();
+['cur','mon'].forEach(g => { if(document.querySelector(`[data-group="${g}"]:not([value=""])`) && [...document.querySelectorAll(`[data-group="${g}"]`)].some(i => i.value.trim() !== '')) document.getElementById(GROUPS[g].box).open = true; });
 calc();
 renderReferences();
 </script>
