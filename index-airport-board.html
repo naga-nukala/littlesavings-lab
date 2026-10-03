@@ -62,6 +62,7 @@ const tools = [
 ];
 tools.push(["Fuel Cost per KM","fuel-cost-per-km.html","⛽","Monthly bills"],["Gold: SGB vs Jewelry Comparator","gold-sgb-vs-jewelry-comparator.html","🪙","Banking & cards"],["Children Corpus Planner","children-corpus-planner.html","🎓","Planning"],["Retirement Corpus Calculator","retirement-corpus-calculator.html","🌅","Planning"],["Salary/CTC Structure Optimizer","salary-ctc-optimizer.html","💼","Planning"]);
 tools.push(["Credit Card Rewards Optimizer", "card-rewards-optimizer.html", "💳", "Banking \u0026 cards"]);
+tools.push(["Cashback Comparator", "cashback-comparator.html", "💳", "Banking \u0026 cards"]);
 const board = document.getElementById("board");
 function tiles(text, index) { return [...text.slice(0, 3)].map((char, tileIndex) => `<span class="tile" style="animation-delay:${(index * 35) + tileIndex * 65}ms">${char}</span>`).join(""); }
 board.innerHTML = tools.map((tool, index) => `<a class="board-row" href="${tool[1]}"><div><div class="tool-name"><span class="split">${tiles(tool[2], index)}</span>${tool[0]}</div><div class="tool-desc">Open calculator / tracker</div></div><div class="category">${tool[3]}</div><div class="status"><i></i>Ready</div></a>`).join("");
